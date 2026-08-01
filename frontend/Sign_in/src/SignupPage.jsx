@@ -1,193 +1,146 @@
 import React, { useState } from 'react';
 
-export default function SignupPage() {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false,
-  });
+export default function AuthPage() {
+  const [role, setRole] = useState('student');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  const [status, setStatus] = useState({ type: '', message: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    setStatus({ type: '', message: '' });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
+    setStatus({ type: '', message: '' });
+    setIsLoading(true);
+
+    try {
+      // Example real-world fetch call:
+      // const response = await fetch('/api/auth/login', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email, password, requestedRole: role }),
+      // });
+      // const data = await response.json();
+
+      // Simulated Async API Request
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Standard success handling
+      setStatus({
+        type: 'success',
+        message: `Successfully authenticated! Redirecting to ${role} dashboard...`,
+      });
+    } catch (err) {
+      setStatus({
+        type: 'error',
+        message: 'Invalid email or password. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
     }
-    if (!formData.agreeTerms) {
-      setError('You must agree to the terms and conditions');
-      return;
-    }
-    setError('');
-    console.log('Form Submitted Successfully:', formData);
-    // Add API submission logic here
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
+        
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-            Create an account
-          </h2>
+          <h2 className="text-3xl font-extrabold text-gray-900">Sign In</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Already have an account?{' '}
-            <a href="#login" className="font-semibold text-indigo-600 hover:text-indigo-500">
-              Sign in
-            </a>
+            Select your portal role to continue
           </p>
         </div>
 
-        {/* Social Authentication */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Role Switcher */}
+        <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1.5" role="tablist">
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+            role="tab"
+            aria-selected={role === 'student'}
+            onClick={() => handleRoleChange('student')}
+            className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
+              role === 'student'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            Google
+            🎓 Student
           </button>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+            role="tab"
+            aria-selected={role === 'mentor'}
+            onClick={() => handleRoleChange('mentor')}
+            className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
+              role === 'mentor'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
           >
-            <svg className="h-5 w-5 fill-current text-gray-900" viewBox="0 0 24 24">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-            </svg>
-            GitHub
+            👨‍🏫 Mentor
           </button>
         </div>
 
-        {/* Divider */}
-        <div className="relative my-4 flex items-center justify-center">
-          <div className="w-full border-t border-gray-200"></div>
-          <span className="absolute bg-white px-3 text-xs uppercase text-gray-500">Or continue with</span>
-        </div>
-
-        {/* Form Error Banner */}
-        {error && (
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
-            {error}
+        {/* Status Banner */}
+        {status.message && (
+          <div
+            aria-live="polite"
+            className={`mt-4 rounded-lg p-3 text-sm font-medium ${
+              status.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}
+          >
+            {status.message}
           </div>
         )}
 
-        {/* Signup Form */}
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        {/* Form */}
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              {role === 'mentor' ? 'Mentor Email' : 'Student Email'}
+            </label>
             <input
-              name="fullName"
-              type="text"
-              required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Jane Doe"
-              value={formData.fullName}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email Address</label>
-            <input
-              name="email"
+              id="email"
               type="email"
               required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-              placeholder="jane@example.com"
-              value={formData.email}
-              onChange={handleChange}
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={role === 'mentor' ? 'mentor@example.com' : 'student@example.com'}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm"
             />
-          </div>
-
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-8 text-xs font-medium text-gray-500 hover:text-gray-700"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
-              name="confirmPassword"
+              id="password"
               type="password"
               required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              value={formData.confirmPassword}
-              onChange={handleChange}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm"
             />
-          </div>
-
-          <div className="flex items-center">
-            <input
-              id="agreeTerms"
-              name="agreeTerms"
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              checked={formData.agreeTerms}
-              onChange={handleChange}
-            />
-            <label htmlFor="agreeTerms" className="ml-2 block text-sm text-gray-600">
-              I agree to the{' '}
-              <a href="#terms" className="font-medium text-indigo-600 hover:underline">
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="#privacy" className="font-medium text-indigo-600 hover:underline">
-                Privacy Policy
-              </a>
-            </label>
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+            disabled={isLoading}
+            className="w-full rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all disabled:opacity-50"
           >
-            Create Account
+            {isLoading ? 'Signing In...' : `Sign In as ${role === 'mentor' ? 'Mentor' : 'Student'}`}
           </button>
         </form>
       </div>
