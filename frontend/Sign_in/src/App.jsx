@@ -1,12 +1,11 @@
 import React from 'react';
-import StudentDashboard from './components/StudentDashboard';
+import SignupPage from './SignupPage';
 
 function App() {
   return (
     <div>
-      <StudentDashboard/>
+      <SignupPage/>
     </div>
   );
 }
-
 export default App;
