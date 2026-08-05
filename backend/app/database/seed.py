@@ -1,15 +1,14 @@
 """
 seed.py
 
-Seeds the database with sample data.
+Seed the database with sample users.
 
 Run:
     python -m app.database.seed
 """
 
 from app import create_app
-from app.extensions import db, bcrypt
-
+from app.extensions import db
 from app.database.models import (
     User,
     Student,
@@ -17,45 +16,25 @@ from app.database.models import (
     StudentMentor,
 )
 
-
 app = create_app()
 
 
-with app.app_context():
+def seed_database():
 
-    print("=" * 50)
-    print("Checking sample data...")
-    print("=" * 50)
+    # Check if sample users already exist
+    if User.query.filter_by(email="student@test.com").first():
+        print("Sample data already exists.")
+        return
 
-    # -------------------------------------------------
-    # Don't insert duplicates
-    # -------------------------------------------------
-
-    student_exists = User.query.filter_by(
-        email="student@test.com"
-    ).first()
-
-    mentor_exists = User.query.filter_by(
-        email="mentor@test.com"
-    ).first()
-
-    if student_exists or mentor_exists:
-        print("Sample users already exist.")
-        print("=" * 50)
-        exit()
-
-    # -------------------------------------------------
+    # -----------------------------
     # Student User
-    # -------------------------------------------------
-
+    # -----------------------------
     student_user = User(
         name="Student One",
         email="student@test.com",
-        password_hash=bcrypt.generate_password_hash(
-            "student123"
-        ).decode("utf-8"),
         role="student",
     )
+    student_user.set_password("student123")
 
     db.session.add(student_user)
     db.session.flush()
@@ -67,19 +46,17 @@ with app.app_context():
     )
 
     db.session.add(student)
+    db.session.flush()
 
-    # -------------------------------------------------
+    # -----------------------------
     # Mentor User
-    # -------------------------------------------------
-
+    # -----------------------------
     mentor_user = User(
         name="Mentor One",
         email="mentor@test.com",
-        password_hash=bcrypt.generate_password_hash(
-            "mentor123"
-        ).decode("utf-8"),
         role="mentor",
     )
+    mentor_user.set_password("mentor123")
 
     db.session.add(mentor_user)
     db.session.flush()
@@ -90,13 +67,11 @@ with app.app_context():
     )
 
     db.session.add(mentor)
-
     db.session.flush()
 
-    # -------------------------------------------------
-    # Student ↔ Mentor Mapping
-    # -------------------------------------------------
-
+    # -----------------------------
+    # Student-Mentor Mapping
+    # -----------------------------
     mapping = StudentMentor(
         student_id=student.id,
         mentor_id=mentor.id,
@@ -104,21 +79,21 @@ with app.app_context():
 
     db.session.add(mapping)
 
-    # -------------------------------------------------
-    # Commit
-    # -------------------------------------------------
-
     db.session.commit()
 
-    print("Database seeded successfully.")
+    print("=" * 50)
+    print("Database seeded successfully!")
     print("=" * 50)
 
-    print("\nSample Login Credentials\n")
-
-    print("Student")
+    print("Student Login")
     print("Email    : student@test.com")
     print("Password : student123\n")
 
-    print("Mentor")
+    print("Mentor Login")
     print("Email    : mentor@test.com")
     print("Password : mentor123")
+
+
+if __name__ == "__main__":
+    with app.app_context():
+        seed_database()
