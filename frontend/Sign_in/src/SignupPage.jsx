@@ -2,35 +2,43 @@ import React, { useState } from 'react';
 
 export default function AuthPage() {
   const [role, setRole] = useState('student');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Stores Username OR Email
   const [password, setPassword] = useState('');
-  
+
   const [status, setStatus] = useState({ type: '', message: '' });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Forgot Password Modal States
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // Step 1: Send OTP | Step 2: Verify & Reset
+  const [resetEmail, setResetEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [modalStatus, setModalStatus] = useState({ type: '', message: '' });
+  const [isModalLoading, setIsModalLoading] = useState(false);
 
   const handleRoleChange = (newRole) => {
     setRole(newRole);
     setStatus({ type: '', message: '' });
   };
 
+  // Main Sign-In Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ type: '', message: '' });
     setIsLoading(true);
 
     try {
-      // Example real-world fetch call:
-      // const response = await fetch('/api/auth/login', {
+      // API call placeholder:
+      // await fetch('/api/auth/login', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password, requestedRole: role }),
+      //   body: JSON.stringify({ identifier, password, requestedRole: role }),
       // });
-      // const data = await response.json();
 
-      // Simulated Async API Request
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Standard success handling
       setStatus({
         type: 'success',
         message: `Successfully authenticated! Redirecting to ${role} dashboard...`,
@@ -38,23 +46,102 @@ export default function AuthPage() {
     } catch (err) {
       setStatus({
         type: 'error',
-        message: 'Invalid email or password. Please try again.',
+        message: 'Invalid credentials. Please check your username/email and password.',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Modal Step 1: Send OTP
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    setModalStatus({ type: '', message: '' });
+    setIsModalLoading(true);
+
+    try {
+      // API call placeholder:
+      // await fetch('/api/auth/forgot-password', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email: resetEmail, role }),
+      // });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setForgotStep(2);
+      setModalStatus({
+        type: 'success',
+        message: `An OTP has been sent to ${resetEmail}`,
+      });
+    } catch (err) {
+      setModalStatus({
+        type: 'error',
+        message: 'Failed to send OTP. Please ensure the email is registered.',
+      });
+    } finally {
+      setIsModalLoading(false);
+    }
+  };
+
+  // Modal Step 2: Confirm New Password
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setModalStatus({ type: '', message: '' });
+
+    if (newPassword !== confirmPassword) {
+      setModalStatus({ type: 'error', message: 'Passwords do not match.' });
+      return;
+    }
+
+    setIsModalLoading(true);
+
+    try {
+      // API call placeholder:
+      // await fetch('/api/auth/reset-password', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email: resetEmail, otp, newPassword, role }),
+      // });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setModalStatus({
+        type: 'success',
+        message: 'Password successfully updated! Closing modal...',
+      });
+
+      // Reset modal state & close after delay
+      setTimeout(() => {
+        closeModal();
+      }, 1500);
+    } catch (err) {
+      setModalStatus({
+        type: 'error',
+        message: 'Invalid OTP or failed to update password. Try again.',
+      });
+    } finally {
+      setIsModalLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setIsForgotModalOpen(false);
+    setForgotStep(1);
+    setResetEmail('');
+    setOtp('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setModalStatus({ type: '', message: '' });
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-        
         {/* Header */}
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">Sign In</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Select your portal role to continue
-          </p>
+          <p className="mt-2 text-sm text-gray-600">Select your portal role to continue</p>
         </div>
 
         {/* Role Switcher */}
@@ -65,9 +152,7 @@ export default function AuthPage() {
             aria-selected={role === 'student'}
             onClick={() => handleRoleChange('student')}
             className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
-              role === 'student'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
+              role === 'student' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'
             }`}
           >
             🎓 Student
@@ -78,9 +163,7 @@ export default function AuthPage() {
             aria-selected={role === 'mentor'}
             onClick={() => handleRoleChange('mentor')}
             className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 ${
-              role === 'mentor'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
+              role === 'mentor' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'
             }`}
           >
             👨‍🏫 Mentor
@@ -104,25 +187,34 @@ export default function AuthPage() {
         {/* Form */}
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              {role === 'mentor' ? 'Mentor Email' : 'Student Email'}
+            <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+              Username or Email
             </label>
             <input
-              id="email"
-              type="email"
+              id="identifier"
+              type="text"
               required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={role === 'mentor' ? 'mentor@example.com' : 'student@example.com'}
+              autoComplete="username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={role === 'mentor' ? 'mentor_username or email' : 'student_username or email'}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsForgotModalOpen(true)}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-500 focus:outline-none"
+              >
+                Forgot Password?
+              </button>
+            </div>
             <input
               id="password"
               type="password"
@@ -144,6 +236,124 @@ export default function AuthPage() {
           </button>
         </form>
       </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl transition-all">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="text-lg font-bold text-gray-900">Reset Password</h3>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 text-xl font-semibold leading-none"
+              >
+                &times;
+              </button>
+            </div>
+
+            {modalStatus.message && (
+              <div
+                className={`mt-4 rounded-lg p-2.5 text-xs font-medium ${
+                  modalStatus.type === 'success'
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {modalStatus.message}
+              </div>
+            )}
+
+            {/* STEP 1: Enter Email to Send OTP */}
+            {forgotStep === 1 && (
+              <form onSubmit={handleSendOtp} className="mt-4 space-y-4">
+                <p className="text-xs text-gray-600">
+                  Enter your registered email address to receive an OTP code.
+                </p>
+                <div>
+                  <label htmlFor="resetEmail" className="block text-xs font-medium text-gray-700">
+                    Email Address
+                  </label>
+                  <input
+                    id="resetEmail"
+                    type="email"
+                    required
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isModalLoading}
+                  className="w-full rounded-lg bg-indigo-600 py-2.5 text-xs font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {isModalLoading ? 'Sending OTP...' : 'Send OTP'}
+                </button>
+              </form>
+            )}
+
+            {/* STEP 2: Enter OTP & New Passwords */}
+            {forgotStep === 2 && (
+              <form onSubmit={handleResetPassword} className="mt-4 space-y-3">
+                <div>
+                  <label htmlFor="otp" className="block text-xs font-medium text-gray-700">
+                    OTP Code
+                  </label>
+                  <input
+                    id="otp"
+                    type="text"
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="Enter OTP"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="newPassword" className="block text-xs font-medium text-gray-700">
+                    New Password
+                  </label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-700">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isModalLoading}
+                  className="w-full rounded-lg bg-indigo-600 py-2.5 text-xs font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {isModalLoading ? 'Confirming...' : 'Confirm'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
