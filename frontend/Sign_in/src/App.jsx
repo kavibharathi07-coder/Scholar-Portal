@@ -1,11 +1,5 @@
-import React from 'react';
-import SignupPage from './SignupPage';
+import AuthPage from "./components/AuthPage";
 
-function App() {
-  return (
-    <div>
-      <SignupPage/>
-    </div>
-  );
+export default function App() {
+  return <AuthPage />;
 }
-export default App;
