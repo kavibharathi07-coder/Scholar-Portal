@@ -16,7 +16,6 @@ def register():
     data = request.get_json()
 
     required_fields = [
-        "name",
         "email",
         "password",
         "role"
