@@ -70,6 +70,7 @@ def register():
         "message": "User registered successfully"
     }), 201
 
+auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.post("/login")
 def login():
@@ -89,7 +90,7 @@ def login():
                 "role": user.role
             }
         }), 200
-
+    
     return jsonify({
         "error": "Invalid email or password"
     }), 401
