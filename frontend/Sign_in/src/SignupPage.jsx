@@ -191,7 +191,7 @@ export default function AuthPage() {
     if (!email.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
       triggerToast(
         "error",
-        "Please enter a valid official email ending with @rajalakshmi.edu.in"
+        "Please enter a valid official EmailId"
       );
       return;
     }
@@ -248,7 +248,7 @@ export default function AuthPage() {
     if (!resetEmail.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
       setModalStatus({
         type: "error",
-        message: "Email must end with @rajalakshmi.edu.in",
+        message: "Invalid Email",
       });
       return;
     }
