@@ -12,24 +12,31 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    data = request.get_json(silent=True) or {}
+
+    data = request.get_json()
 
     email = data.get("email")
     password = data.get("password")
-    role=data.get("role")
+    role = data.get("role")
 
-    if not email or not role or not password:
+    if not email or not password or not role:
         return jsonify({
-            "error": "Email ,role and password are required."
+            "error": "Fill the missing credentials properly."
         }), 400
 
-    email = email.strip().lower()
+    user = check_user(email, password, role)
 
-    if check_user(password):
+    if user:
         return jsonify({
-            "message": "Login successful.",
+            "message": "Login successful",
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role
+            }
         }), 200
-    
+
     return jsonify({
-        "error": "Invalid email or password."
+        "error": "Invalid email, password or role."
     }), 401
