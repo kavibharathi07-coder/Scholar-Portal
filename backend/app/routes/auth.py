@@ -1,16 +1,38 @@
 from flask import Blueprint, request, jsonify
 
 from app.extensions import db
-from app.database.models import User
+from app.database import User
 
-auth_bp = Blueprint("auth", __name__)
+auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
-# ======================================================
-# REGISTER
-# ======================================================
+def get_email_and_password():
+    data = request.get_json(silent=True) or {}
 
-@auth_bp.route("/register", methods=["POST"])
+    email = data.get("email")
+    password = data.get("password")
+
+    if not isinstance(email, str) or not email.strip():
+        return None, None, jsonify({
+            "error": "Valid email is required"
+        }), 400
+
+    if not isinstance(password, str) or not password:
+        return None, None, jsonify({
+            "error": "Password is required"
+        }), 400
+
+    email = email.strip().lower()
+
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return None, None, jsonify({
+            "error": "Invalid email format"
+        }), 400
+
+    return email, password, None, None
+
+
+@auth_bp.post("/register")
 def register():
 
     data = request.get_json()
@@ -27,72 +49,47 @@ def register():
                 "error": f"{field} is required."
             }), 400
 
-    existing_user = User.query.filter_by(
-        email=data["email"]
-    ).first()
+    existing_user = User.query.filter_by(email=email).first()
 
     if existing_user:
         return jsonify({
-            "error": "Email already registered."
-        }), 400
+            "error": "Email already registered"
+        }), 409
 
-    user = User(
-        name=data["name"],
-        email=data["email"],
-        role=data["role"]
+    new_user = User(
+        email=email,
+        role="user"
     )
 
-    user.set_password(data["password"])
+    new_user.set_password(password)
 
-    db.session.add(user)
+    db.session.add(new_user)
     db.session.commit()
 
     return jsonify({
-        "message": "User registered successfully."
+        "message": "User registered successfully"
     }), 201
 
 
-# ======================================================
-# LOGIN
-# ======================================================
-
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.post("/login")
 def login():
+    email, password, error_response, status_code = get_email_and_password()
 
-    data = request.get_json()
+    if error_response:
+        return error_response, status_code
 
-    email = data.get("email")
-    password = data.get("password")
-
-    if not email or not password:
-
-        return jsonify({
-            "error": "Email and password are required."
-        }), 400
-
-    user = User.query.filter_by(
-        email=email
-    ).first()
+    user = User.query.filter_by(email=email).first()
 
     if user and user.check_password(password):
-
         return jsonify({
-
-            "message": "Login successful.",
-
+            "message": "Login successful",
             "user": {
-
                 "id": user.id,
-                "name": user.name,
                 "email": user.email,
                 "role": user.role
-
             }
-
         }), 200
 
     return jsonify({
-
-        "error": "Invalid email or password."
-
+        "error": "Invalid email or password"
     }), 401

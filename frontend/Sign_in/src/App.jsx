@@ -1,11 +1,16 @@
-import React from 'react';
-import SignupPage from './SignupPage';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import AuthPage from "./components/AuthPage";
+import StudentDashboard from "./components/StudentDashboard";
+import MentorDashboard from "./components/MentorDashboard";
 
-function App() {
+export default function App() {
   return (
-    <div>
-      <SignupPage/>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AuthPage />} />
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/mentor-dashboard" element={<MentorDashboard />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-export default App;
