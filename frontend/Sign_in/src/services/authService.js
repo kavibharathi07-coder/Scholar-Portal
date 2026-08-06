@@ -15,7 +15,7 @@ export const loginUser = async ({ email, password, role }) => {
     throw new Error("Password is required.");
   }
   if (!email.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
-    throw new Error("Please use your official @rajalakshmi.edu.in email.");
+    throw new Error("Please use your official");
   }
 
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -59,11 +59,11 @@ export const loginUser = async ({ email, password, role }) => {
  * Registers a new student or mentor. Matches POST /auth/register.
  * @param {{ name: string, email: string, password: string, role: "student" | "mentor" }} details
  */
-export const registerUser = async ({ name, email, password, role }) => {
+export const registerUser = async ({ email, password, role }) => {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password, role }),
+    body: JSON.stringify({ email, password, role }),
   });
 
   let data;
