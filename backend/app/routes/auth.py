@@ -4,7 +4,7 @@ from app.extensions import db
 from database.auth_op import check_user
 
 
-auth_bp = Blueprint("auth", __name__)
+auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 # ======================================================
 # LOGIN
