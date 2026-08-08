@@ -30,7 +30,7 @@ from sqlalchemy.orm import (
 )
 
 from .database import db
-
+from app.database.security import hash_password, verify_password
 
 # ============================================================
 # USER TABLE
@@ -90,6 +90,15 @@ class User(db.Model):
 
     def __repr__(self):
         return f"<User {self.email}>"
+
+    def set_password(self, password: str):
+        self.password_hash = hash_password(password)
+
+    def check_password(self, password: str) -> bool:
+        return verify_password(
+            password,
+            self.password_hash
+        )
 
 # ============================================================
 # STUDENT TABLE

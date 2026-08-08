@@ -3,7 +3,8 @@ Seed the database with sample users for testing.
 
 The sample accounts use the Rajalakshmi college email domain.
 
-Run:
+Run from the backend folder:
+
     python -m app.database.seed
 """
 
@@ -16,111 +17,176 @@ from app.database.models import (
     StudentMentor,
 )
 
+
 app = create_app()
 
 
 def seed_database():
 
-    # --------------------------------------------------
-    # Check if sample users already exist
-    # --------------------------------------------------
+    # ==================================================
+    # SAMPLE LOGIN DETAILS
+    # ==================================================
+
     student_email = "student@rajalakshmi.edu.in"
+    student_password = "Student@123"
+
     mentor_email = "mentor@rajalakshmi.edu.in"
+    mentor_password = "Mentor@123"
+
+    # ==================================================
+    # STUDENT
+    # ==================================================
 
     existing_student = User.query.filter_by(
         email=student_email
     ).first()
 
+    if existing_student:
+        print("Student sample account already exists.")
+
+    else:
+        # --------------------------------------------------
+        # Student User
+        # --------------------------------------------------
+
+        student_user = User(
+            name="Student One",
+            email=student_email,
+            role="student",
+        )
+
+        # Hash password before storing it
+        student_user.set_password(student_password)
+
+        db.session.add(student_user)
+        db.session.flush()
+
+        # --------------------------------------------------
+        # Student Profile
+        # --------------------------------------------------
+
+        student = Student(
+            user_id=student_user.id,
+            department="Computer Science",
+            year=3,
+        )
+
+        db.session.add(student)
+
+        print("Student account created.")
+
+    # ==================================================
+    # MENTOR
+    # ==================================================
+
     existing_mentor = User.query.filter_by(
         email=mentor_email
     ).first()
 
-    if existing_student or existing_mentor:
-        print("Sample college users already exist.")
-        return
+    if existing_mentor:
+        print("Mentor sample account already exists.")
 
-    # --------------------------------------------------
-    # Student User
-    # --------------------------------------------------
-    student_user = User(
-        name="Student One",
-        email=student_email,
-        role="student",
-    )
+    else:
+        # --------------------------------------------------
+        # Mentor User
+        # --------------------------------------------------
 
-    student_user.set_password("Student@123")
+        mentor_user = User(
+            name="Mentor One",
+            email=mentor_email,
+            role="mentor",
+        )
 
-    db.session.add(student_user)
-    db.session.flush()
+        # Hash password before storing it
+        mentor_user.set_password(mentor_password)
 
-    # --------------------------------------------------
-    # Student Profile
-    # --------------------------------------------------
-    student = Student(
-        user_id=student_user.id,
-        department="Computer Science",
-        year=3,
-    )
+        db.session.add(mentor_user)
+        db.session.flush()
 
-    db.session.add(student)
-    db.session.flush()
+        # --------------------------------------------------
+        # Mentor Profile
+        # --------------------------------------------------
 
-    # --------------------------------------------------
-    # Mentor User
-    # --------------------------------------------------
-    mentor_user = User(
-        name="Mentor One",
-        email=mentor_email,
-        role="mentor",
-    )
+        mentor = Mentor(
+            user_id=mentor_user.id,
+            designation="Assistant Professor",
+        )
 
-    mentor_user.set_password("Mentor@123")
+        db.session.add(mentor)
 
-    db.session.add(mentor_user)
-    db.session.flush()
+        print("Mentor account created.")
 
-    # --------------------------------------------------
-    # Mentor Profile
-    # --------------------------------------------------
-    mentor = Mentor(
-        user_id=mentor_user.id,
-        designation="Assistant Professor",
-    )
+    # ==================================================
+    # COMMIT USERS AND PROFILES
+    # ==================================================
 
-    db.session.add(mentor)
-    db.session.flush()
-
-    # --------------------------------------------------
-    # Student-Mentor Mapping
-    # --------------------------------------------------
-    mapping = StudentMentor(
-        student_id=student.id,
-        mentor_id=mentor.id,
-    )
-
-    db.session.add(mapping)
-
-    # --------------------------------------------------
-    # Commit all changes
-    # --------------------------------------------------
     db.session.commit()
 
-    # --------------------------------------------------
-    # Success Message
-    # --------------------------------------------------
-    print("=" * 50)
-    print("Database seeded successfully!")
-    print("=" * 50)
+    # ==================================================
+    # CREATE STUDENT-MENTOR MAPPING
+    # ==================================================
 
-    print("\nStudent Login")
+    # Fetch profiles from database
+    student = Student.query.join(
+        User
+    ).filter(
+        User.email == student_email
+    ).first()
+
+    mentor = Mentor.query.join(
+        User
+    ).filter(
+        User.email == mentor_email
+    ).first()
+
+    if student and mentor:
+
+        existing_mapping = StudentMentor.query.filter_by(
+            student_id=student.id,
+            mentor_id=mentor.id
+        ).first()
+
+        if existing_mapping:
+            print("Student-Mentor mapping already exists.")
+
+        else:
+            mapping = StudentMentor(
+                student_id=student.id,
+                mentor_id=mentor.id,
+            )
+
+            db.session.add(mapping)
+            db.session.commit()
+
+            print("Student-Mentor mapping created.")
+
+    # ==================================================
+    # SUCCESS MESSAGE
+    # ==================================================
+
+    print()
+    print("=" * 55)
+    print("DATABASE SEEDING COMPLETED")
+    print("=" * 55)
+
+    print("\nSTUDENT LOGIN")
+    print("-" * 30)
     print("Email    :", student_email)
-    print("Password : Student@123")
+    print("Password :", student_password)
 
-    print("\nMentor Login")
+    print("\nMENTOR LOGIN")
+    print("-" * 30)
     print("Email    :", mentor_email)
-    print("Password : Mentor@123")
+    print("Password :", mentor_password)
 
+    print("=" * 55)
+
+
+# ======================================================
+# RUN SEED
+# ======================================================
 
 if __name__ == "__main__":
+
     with app.app_context():
         seed_database()
