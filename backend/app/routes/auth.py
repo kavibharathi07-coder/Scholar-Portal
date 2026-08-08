@@ -4,7 +4,7 @@ from app.extensions import db
 from database.auth_op import check_user
 
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+auth_bp = Blueprint("auth", __name__, url_prefix="http://localhost:5000")
 
 # ======================================================
 # LOGIN
@@ -12,31 +12,24 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
     email = data.get("email")
     password = data.get("password")
-    role = data.get("role")
+    role=data.get("role")
 
-    if not email or not password or not role:
+    if not email or not role or not password:
         return jsonify({
-            "error": "Fill the missing credentials properly."
+            "error": "Email ,role and password are required."
         }), 400
 
-    user = check_user(email, password, role)
+    email = email.strip().lower()
 
-    if user:
+    if check_user(password):
         return jsonify({
-            "message": "Login successful",
-            "user": {
-                "id": user.id,
-                "name": user.name,
-                "email": user.email,
-                "role": user.role
-            }
+            "message": "Login successful.",
         }), 200
-
+    
     return jsonify({
-        "error": "Invalid email, password or role."
+        "error": "Invalid email or password."
     }), 401
