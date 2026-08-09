@@ -1,85 +1,63 @@
 from flask import Blueprint, request, jsonify
 
-from app.extensions import db
-from app.database import User
-
-auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+from app.database.auth_op import check_user
 
 
-def get_email_and_password():
+auth_bp = Blueprint("auth", __name__)
+
+
+@auth_bp.route("/login", methods=["POST"])
+def login():
+
+    # Get JSON sent by React
     data = request.get_json(silent=True) or {}
 
     email = data.get("email")
     password = data.get("password")
+    role = data.get("role")
 
-    if not isinstance(email, str) or not email.strip():
-        return None, None, jsonify({
-            "error": "Valid email is required"
-        }), 400
-
-    if not isinstance(password, str) or not password:
-        return None, None, jsonify({
-            "error": "Password is required"
-        }), 400
-
-    email = email.strip().lower()
-
-    if "@" not in email or "." not in email.split("@")[-1]:
-        return None, None, jsonify({
-            "error": "Invalid email format"
-        }), 400
-
-    return email, password, None, None
-
-
-@auth_bp.post("/register")
-def register():
-    email, password, error_response, status_code = get_email_and_password()
-
-    if error_response:
-        return error_response, status_code
-
-    existing_user = User.query.filter_by(email=email).first()
-
-    if existing_user:
+    # Check required fields
+    if not email or not password or not role:
         return jsonify({
-            "error": "Email already registered"
-        }), 409
+            "error": "Email, password and role are required."
+        }), 400
 
-    new_user = User(
+    # Normalize values
+    email = email.strip().lower()
+    role = role.strip().lower()
+
+    # Only allow college email
+    if not email.endswith("@rajalakshmi.edu.in"):
+        return jsonify({
+            "error": "Please use your official @rajalakshmi.edu.in email."
+        }), 403
+
+    # Validate role
+    if role not in ["student", "mentor"]:
+        return jsonify({
+            "error": "Invalid role."
+        }), 400
+
+    # Check database
+    user = check_user(
         email=email,
-        role="user"
+        password=password,
+        role=role
     )
 
-    new_user.set_password(password)
-
-    db.session.add(new_user)
-    db.session.commit()
-
-    return jsonify({
-        "message": "User registered successfully"
-    }), 201
-
-
-@auth_bp.post("/login")
-def login():
-    email, password, error_response, status_code = get_email_and_password()
-
-    if error_response:
-        return error_response, status_code
-
-    user = User.query.filter_by(email=email).first()
-
-    if user and user.check_password(password):
+    # Invalid credentials
+    if user is None:
         return jsonify({
-            "message": "Login successful",
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "role": user.role
-            }
-        }), 200
+            "error": "Invalid email, password or role."
+        }), 401
 
+    # Successful login
     return jsonify({
-        "error": "Invalid email or password"
-    }), 401
+        "message": "Login successful.",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role
+        }
+    }), 200
