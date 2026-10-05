@@ -4,12 +4,8 @@ from app.database.auth_op import check_user
 
 
 auth_bp = Blueprint("auth", __name__)
-
-
 @auth_bp.route("/login", methods=["POST"])
 def login():
-
-    # Get JSON sent by React
     data = request.get_json(silent=True) or {}
 
     email = data.get("email")
