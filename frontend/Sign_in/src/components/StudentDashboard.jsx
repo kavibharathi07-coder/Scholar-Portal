@@ -55,75 +55,14 @@ const isPastDay = (dayName) => {
 // INITIAL TASKS
 // --------------------------------------------------
 
+// No static tasks.
+// Tasks will be added dynamically by the student.
 const INITIAL_TASKS = {
-  Monday: [
-    {
-      id: 1,
-      title: "Complete Math Exercise 4.2",
-      completed: true,
-      locked: false,
-      proofName: "math_homework.pdf",
-      proofType: "pdf",
-      proofUrl: "#",
-    },
-    {
-      id: 2,
-      title: "Physics Lab Report Submission",
-      completed: false,
-      locked: false,
-      proofName: null,
-      proofType: null,
-      proofUrl: null,
-    },
-  ],
-
-  Tuesday: [
-    {
-      id: 3,
-      title: "Read English Literature Chapter 3",
-      completed: true,
-      locked: false,
-      proofName: "chapter_notes.png",
-      proofType: "image",
-      proofUrl: "#",
-    },
-  ],
-
-  Wednesday: [
-    {
-      id: 4,
-      title: "Computer Science Algorithm Assignment",
-      completed: false,
-      locked: false,
-      proofName: null,
-      proofType: null,
-      proofUrl: null,
-    },
-  ],
-
-  Thursday: [
-    {
-      id: 5,
-      title: "Chemistry Quiz Preparation",
-      completed: false,
-      locked: false,
-      proofName: null,
-      proofType: null,
-      proofUrl: null,
-    },
-  ],
-
-  Friday: [
-    {
-      id: 6,
-      title: "Weekly Essay Submission",
-      completed: false,
-      locked: false,
-      proofName: null,
-      proofType: null,
-      proofUrl: null,
-    },
-  ],
+  Monday: [],
+  Tuesday: [],
+  Wednesday: [],
+  Thursday: [],
+  Friday: [],
 };
 
 // --------------------------------------------------
@@ -203,7 +142,7 @@ export default function StudentDashboard() {
     setTasks((previousTasks) => ({
       ...previousTasks,
       [selectedDay]: [
-        ...previousTasks[selectedDay],
+        ...(previousTasks[selectedDay] || []),
         newTask,
       ],
     }));
@@ -270,40 +209,42 @@ export default function StudentDashboard() {
     setTasks((previousTasks) => ({
       ...previousTasks,
 
-      [selectedDay]: previousTasks[selectedDay].map((task) => {
-        if (task.id !== taskId) {
+      [selectedDay]: (previousTasks[selectedDay] || []).map(
+        (task) => {
+          if (task.id !== taskId) {
+            return task;
+          }
+
+          // Checkbox confirmation
+          if (actionType === "TOGGLE") {
+            return {
+              ...task,
+              completed: !task.completed,
+              locked: true,
+            };
+          }
+
+          // File upload confirmation
+          if (actionType === "UPLOAD" && pendingFile) {
+            const isPdf =
+              pendingFile.type === "application/pdf";
+
+            const fileUrl =
+              URL.createObjectURL(pendingFile);
+
+            return {
+              ...task,
+              proofName: pendingFile.name,
+              proofType: isPdf ? "pdf" : "image",
+              proofUrl: fileUrl,
+              completed: true,
+              locked: true,
+            };
+          }
+
           return task;
         }
-
-        // Checkbox confirmation
-        if (actionType === "TOGGLE") {
-          return {
-            ...task,
-            completed: !task.completed,
-            locked: true,
-          };
-        }
-
-        // File upload confirmation
-        if (actionType === "UPLOAD" && pendingFile) {
-          const isPdf =
-            pendingFile.type === "application/pdf";
-
-          const fileUrl =
-            URL.createObjectURL(pendingFile);
-
-          return {
-            ...task,
-            proofName: pendingFile.name,
-            proofType: isPdf ? "pdf" : "image",
-            proofUrl: fileUrl,
-            completed: true,
-            locked: true,
-          };
-        }
-
-        return task;
-      }),
+      ),
     }));
 
     setConfirmModal({
@@ -334,7 +275,6 @@ export default function StudentDashboard() {
     console.log("Sign out clicked");
 
     // Later you can navigate to login page here.
-    // Example:
     // window.location.href = "/";
   };
 
@@ -354,6 +294,7 @@ export default function StudentDashboard() {
         <header className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
 
           {/* LEFT SIDE */}
+
           <div>
             <h1 className="text-2xl font-bold text-slate-900">
               Student Task Dashboard
@@ -366,6 +307,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* RIGHT SIDE */}
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
 
             {/* ACTIVE DAY */}
