@@ -1,8 +1,19 @@
 import React, { useState, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { MousePointerClick } from "lucide-react";
 import collegeBg from "../assets/college-bg.jpg";
+import {
+  MousePointerClick,
+  CheckCircle2Icon,
+  InfoIcon,
+  CircleAlert,
+} from "lucide-react";
 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "/src/components/ui/alert";
+import { Button } from "/src/components/ui/button";
 /* =========================================================
    FIXED GRADUATION CAP
 ========================================================= */
@@ -916,69 +927,101 @@ export default function AuthPage() {
       <div className="absolute inset-0 z-0 bg-black/40 pointer-events-none" />
 
       {/* =====================================================
-          TOAST NOTIFICATION
-      ===================================================== */}
+    SHADCN ALERT NOTIFICATION
+===================================================== */}
 
-      <div
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out transform ${
-          toast.show
-            ? "translate-y-0 opacity-100 scale-100"
-            : "-translate-y-16 opacity-0 scale-95 pointer-events-none"
-        }`}
-      >
-        <div
-          className={`flex items-center space-x-3 px-6 py-3.5 rounded-xl shadow-2xl border text-sm font-semibold max-w-md ${
-            toast.type === "success"
-              ? "bg-emerald-700 text-white border-emerald-600"
-              : "bg-red-700 text-white border-red-600"
-          }`}
-        >
-          {toast.type === "error" ? (
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          )}
+<div
+  className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 transition-all duration-500 ease-in-out ${
+    toast.show
+      ? "translate-y-0 opacity-100 scale-100"
+      : "-translate-y-16 opacity-0 scale-95 pointer-events-none"
+  }`}
+>
+  <Alert
+    variant={toast.type === "error" ? "destructive" : "default"}
+    className={`relative overflow-hidden bg-white shadow-2xl rounded-xl border ${
+      toast.type === "success"
+        ? "border-emerald-200"
+        : toast.type === "error"
+        ? "border-red-200"
+        : "border-blue-200"
+    }`}
+  >
+    {/* ICON */}
 
-          <span>{toast.message}</span>
+    {toast.type === "success" ? (
+      <CheckCircle2Icon className="h-5 w-5 text-emerald-600" />
+    ) : toast.type === "error" ? (
+      <CircleAlert className="h-5 w-5 text-red-600" />
+    ) : (
+      <InfoIcon className="h-5 w-5 text-blue-600" />
+    )}
 
-          <button
-            type="button"
-            onClick={() =>
-              setToast({
-                ...toast,
-                show: false,
-              })
-            }
-            className="ml-auto text-white/80 hover:text-white"
-          >
-            &times;
-          </button>
-        </div>
-      </div>
+    {/* CONTENT */}
+
+    <AlertTitle
+      className={
+        toast.type === "success"
+          ? "text-emerald-800"
+          : toast.type === "error"
+          ? "text-red-800"
+          : "text-blue-800"
+      }
+    >
+      {toast.type === "success"
+        ? "Success"
+        : toast.type === "error"
+        ? "Something went wrong"
+        : "Information"}
+    </AlertTitle>
+
+    <AlertDescription
+      className={
+        toast.type === "success"
+          ? "text-emerald-700"
+          : toast.type === "error"
+          ? "text-red-700"
+          : "text-blue-700"
+      }
+    >
+      {toast.message}
+    </AlertDescription>
+
+    {/* CLOSE BUTTON */}
+
+    <button
+      type="button"
+      onClick={() =>
+        setToast({
+          ...toast,
+          show: false,
+        })
+      }
+      className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 transition-colors"
+      aria-label="Close notification"
+    >
+      <span className="text-lg leading-none">&times;</span>
+    </button>
+
+    {/* PROGRESS BAR */}
+
+    <motion.div
+      initial={{ width: "100%" }}
+      animate={{ width: toast.show ? "0%" : "100%" }}
+      transition={{
+        duration: 4,
+        ease: "linear",
+      }}
+      className={`absolute bottom-0 left-0 h-1 ${
+        toast.type === "success"
+          ? "bg-emerald-500"
+          : toast.type === "error"
+          ? "bg-red-500"
+          : "bg-blue-500"
+      }`}
+    />
+  </Alert>
+</div>
 
       {/* =====================================================
           CENTER CONTAINER
