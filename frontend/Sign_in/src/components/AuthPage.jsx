@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 function FixedGraduationCap() {
   return (
@@ -139,7 +138,6 @@ function EyeIcon({ show }) {
 }
 
 export default function AuthPage() {
-  const navigate = useNavigate();
   const [role, setRole] = useState("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -189,6 +187,7 @@ export default function AuthPage() {
     event.preventDefault();
     setToast({ show: false, type: "", message: "" });
 
+    // Validate email extension
     if (!email.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
       triggerToast(
         "error",
@@ -199,53 +198,43 @@ export default function AuthPage() {
 
     setIsLoading(true);
 
+    const payload = {
+      user_type: role,
+      email: email,
+      password: password,
+    };
+
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch("https://your-api-endpoint.com/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          role,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      let data = {};
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
+      const data = await response.json();
 
-      if (!response.ok) {
+      if (response.ok && data.success) {
+        if (data.token) {
+          localStorage.setItem("authToken", data.token);
+        }
+
+        triggerToast(
+          "success",
+          data.message || "Login successful! Redirecting..."
+        );
+      } else {
         triggerToast(
           "error",
-          data.error || "Invalid email or password."
+          data.message || "Invalid credentials provided."
         );
-        return;
       }
-
-      if (data.user) {
-        localStorage.setItem("userData", JSON.stringify(data.user));
-      }
-
-      const destination =
-        data.user?.role === "mentor" ? "/mentor-dashboard" : "/student-dashboard";
-
-      triggerToast(
-        "success",
-        data.message || "Login successful! Redirecting..."
-      );
-
-      setTimeout(() => {
-        navigate(destination);
-      }, 800);
     } catch (err) {
+      // Handles network failure or server unreachable condition
       triggerToast(
         "error",
-        "Backend server is not running. Please start the backend and try again."
+        "Backend server is not running. Please start the server and try again."
       );
     } finally {
       setIsLoading(false);
