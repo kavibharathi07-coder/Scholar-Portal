@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.enum.user_role import UserRole
+#from app.enum.user_role import UserRole
 
 class SessionUser(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -8,7 +8,7 @@ class SessionUser(BaseModel):
     id : int 
     email : str
     name : str
-    role : UserRole
+    role : str
     roll_no : str | None = None
     department : str | None = None
     year : int | None = None

@@ -1,7 +1,6 @@
 # services/send_email.py
 
 import asyncio
-import os
 import smtplib
 import time
 import secrets
@@ -9,21 +8,23 @@ import secrets
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from format.email_otp import get_otp_email_html
+from app.core.config import settings
+from app.format.email_otp import get_otp_email_html
 
 
 def _send_otp_email_sync(email: str, otp: str) -> bool:
-    sender_email = os.getenv("MAIL_USERNAME")
-    sender_password = os.getenv("MAIL_PASSWORD")
+    sender_email = settings.SMTP_USER
+    sender_password = settings.SMTP_PASSWORD
+    from_email = settings.SMTP_FROM or sender_email
 
     if not sender_email or not sender_password:
-        print("Email credentials are missing.")
+        print("SMTP credentials are missing.")
         return False
 
     message = MIMEMultipart("alternative")
 
     message["Subject"] = "Scholars Portal - Account Verification"
-    message["From"] = sender_email
+    message["From"] = from_email
     message["To"] = email
 
     # Get the HTML email format from the format folder
@@ -34,7 +35,7 @@ def _send_otp_email_sync(email: str, otp: str) -> bool:
     )
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
 
             server.login(
@@ -43,7 +44,7 @@ def _send_otp_email_sync(email: str, otp: str) -> bool:
             )
 
             server.sendmail(
-                sender_email,
+                from_email,
                 email,
                 message.as_string()
             )
@@ -55,11 +56,11 @@ def _send_otp_email_sync(email: str, otp: str) -> bool:
         return False
 
 
-async def send_otp_email(email: str, otp: str) -> bool:
+async def send_otp_email(email: str) -> bool:
     """
     Send OTP email asynchronously in a FastAPI application.
     """
-
+    otp = generate_otp(email)
     return await asyncio.to_thread(
         _send_otp_email_sync,
         email,

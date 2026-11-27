@@ -3,7 +3,7 @@
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
-from models.User import User
+from app.models.User import User
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
