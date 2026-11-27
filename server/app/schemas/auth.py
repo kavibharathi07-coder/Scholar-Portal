@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.enum.user_role import UserRole
 
@@ -31,3 +31,14 @@ class CompleteProfileRequest(BaseModel):
     roll_no: str = Field(min_length=1, max_length=50)
     department: str = Field(min_length=1, max_length=100)
     year: int = Field(ge=2000, le=2100)
+
+class ForgotPasswordRequestOtpRequest(BaseModel):
+    email: EmailStr
+
+class ForgotPasswordVerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=4, max_length=8)
+
+class ForgotPasswordResetRequest(BaseModel):
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
