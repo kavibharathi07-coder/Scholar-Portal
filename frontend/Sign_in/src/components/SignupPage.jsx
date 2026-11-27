@@ -1,7 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { MousePointerClick } from "lucide-react";
 import collegeBg from "../assets/college-bg.jpg";
+import {
+  MousePointerClick,
+  CheckCircle2Icon,
+  InfoIcon,
+  CircleAlert,
+} from "lucide-react";
+
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "/src/components/ui/alert";
+import { Button } from "/src/components/ui/button";
+import {
+  loginUser,
+  requestPasswordOtp,
+  verifyPasswordOtp,
+  resetPassword,
+} from "../services/authService";
+
+/* =========================================================
+   FIXED GRADUATION CAP
+========================================================= */
+
 function FixedGraduationCap() {
   return (
     <svg
@@ -18,12 +42,14 @@ function FixedGraduationCap() {
         strokeWidth="3.5"
         strokeLinejoin="round"
       />
+
       <path
         d="M38 57V91C57 103 88 103 107 91V57L72 72L38 57Z"
         fill="#9A7B4F"
         stroke="#735A36"
         strokeWidth="3.5"
       />
+
       <path
         d="M123 38V75"
         stroke="#E2C799"
@@ -33,6 +59,10 @@ function FixedGraduationCap() {
     </svg>
   );
 }
+
+/* =========================================================
+   STUDENT ICON
+========================================================= */
 
 function StudentIcon() {
   return (
@@ -50,6 +80,10 @@ function StudentIcon() {
   );
 }
 
+/* =========================================================
+   MENTOR ICON
+========================================================= */
+
 function MentorIcon() {
   return (
     <svg
@@ -64,6 +98,10 @@ function MentorIcon() {
     </svg>
   );
 }
+
+/* =========================================================
+   USER INPUT ICON
+========================================================= */
 
 function UserInputIcon() {
   return (
@@ -83,6 +121,10 @@ function UserInputIcon() {
   );
 }
 
+/* =========================================================
+   LOCK ICON
+========================================================= */
+
 function LockIcon() {
   return (
     <svg
@@ -100,6 +142,10 @@ function LockIcon() {
     </svg>
   );
 }
+
+/* =========================================================
+   EYE ICON
+========================================================= */
 
 function EyeIcon({ show }) {
   return show ? (
@@ -129,6 +175,7 @@ function EyeIcon({ show }) {
         strokeWidth="1.8"
         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
       />
+
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -138,6 +185,11 @@ function EyeIcon({ show }) {
     </svg>
   );
 }
+
+/* =========================================================
+   SUCCESS PARTICLES
+========================================================= */
+
 function SuccessParticles() {
   const particles = Array.from({ length: 18 }, (_, index) => {
     const angle = (index / 18) * Math.PI * 2;
@@ -179,21 +231,30 @@ function SuccessParticles() {
   );
 }
 
+/* =========================================================
+   MAIN AUTH PAGE
+========================================================= */
 
 export default function AuthPage() {
-  const [role, setRole] = useState("student");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showParticles, setShowParticles] = useState(false);
-  const triggerParticles = () => {
-  setShowParticles(true);
+  /* =======================================================
+     LOGIN STATES
+  ======================================================= */
 
-  setTimeout(() => {
-    setShowParticles(false);
-  }, 800);
-};
+  const [role, setRole] = useState("student");
+
+  const [email, setEmail] = useState("");
+
+  const [password, setPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [showParticles, setShowParticles] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
+
+  /* =======================================================
+     TOAST
+  ======================================================= */
 
   const [toast, setToast] = useState({
     show: false,
@@ -201,13 +262,32 @@ export default function AuthPage() {
     message: "",
   });
 
+  /* =======================================================
+     FORGOT PASSWORD
+  ======================================================= */
+
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+
+  /*
+    STEP 1 = Email
+    STEP 2 = OTP
+    STEP 3 = New Password
+  */
   const [forgotStep, setForgotStep] = useState(1);
 
   const [resetEmail, setResetEmail] = useState("");
+
   const [otp, setOtp] = useState("");
+
+  const [otpError, setOtpError] = useState("");
+
   const [newPassword, setNewPassword] = useState("");
+
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [isOtpVerifying, setIsOtpVerifying] = useState(false);
+
+  const [resendLoading, setResendLoading] = useState(false);
 
   const [modalStatus, setModalStatus] = useState({
     type: "",
@@ -216,136 +296,411 @@ export default function AuthPage() {
 
   const [isModalLoading, setIsModalLoading] = useState(false);
 
+  /* =======================================================
+     OTP REFS
+  ======================================================= */
+
+  const otpRefs = useRef([]);
+
+  /* =======================================================
+     MENTOR CHECK
+  ======================================================= */
+
   const isMentor = role === "mentor";
+  const navigate = useNavigate();
+
+  /* =======================================================
+     PARTICLE TRIGGER
+  ======================================================= */
+
+  const triggerParticles = () => {
+    setShowParticles(true);
+
+    setTimeout(() => {
+      setShowParticles(false);
+    }, 800);
+  };
+
+  /* =======================================================
+     TOAST
+  ======================================================= */
 
   const triggerToast = (type, message) => {
-    setToast({ show: true, type, message });
+    setToast({
+      show: true,
+      type,
+      message,
+    });
+
     setTimeout(() => {
-      setToast({ show: false, type: "", message: "" });
+      setToast({
+        show: false,
+        type: "",
+        message: "",
+      });
     }, 4000);
   };
 
+  /* =======================================================
+     ROLE CHANGE
+  ======================================================= */
+
   const handleRoleChange = (newRole) => {
     if (newRole === role) return;
+
     setRole(newRole);
+
     setEmail("");
+
     setPassword("");
-    setToast({ show: false, type: "", message: "" });
+
+    setToast({
+      show: false,
+      type: "",
+      message: "",
+    });
   };
 
+  /* =======================================================
+     LOGIN
+  ======================================================= */
 
   const handleSubmit = async (event) => {
-  event.preventDefault();
+    event.preventDefault();
 
-  triggerParticles();
+    triggerParticles();
 
-  setToast({ show: false, type: "", message: "" });
+    setToast({
+      show: false,
+      type: "",
+      message: "",
+    });
 
-  // Validate email extension
-  if (!email.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
-    triggerToast(
-      "error",
-      "Please enter a valid official email ending with @rajalakshmi.edu.in"
-    );
-    return;
-  }
+    /* EMAIL VALIDATION */
 
-  setIsLoading(true);
-
-  // continue with your existing code...
-    // Validate email extension
-    if (!email.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
+    if (
+      !email
+        .toLowerCase()
+        .endsWith("@rajalakshmi.edu.in")
+    ) {
       triggerToast(
         "error",
         "Please enter a valid official email ending with @rajalakshmi.edu.in"
       );
+
+      return;
+    }
+
+    /* PASSWORD VALIDATION */
+
+    if (!password) {
+      triggerToast("error", "Password is required.");
       return;
     }
 
     setIsLoading(true);
 
-    const payload = {
-      user_type: role,
-      email: email,
-      password: password,
-    };
-
     try {
-      const response = await fetch("https://your-api-endpoint.com/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      const data = await loginUser({
+        email,
+        password,
+        role,
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        if (data.token) {
-          localStorage.setItem("authToken", data.token);
-        }
-
-        triggerToast(
-          "success",
-          data.message || "Login successful! Redirecting..."
-        );
-      } else {
-        triggerToast(
-          "error",
-          data.message || "Invalid credentials provided."
-        );
-      }
-    } catch (err) {
-      // Handles network failure or server unreachable condition
       triggerToast(
-        "error",
-        "Backend server is not running. Please start the server and try again."
+        "success",
+        data.message || "Login successful! Redirecting..."
       );
+
+      navigate(
+        data.user?.role === "mentor"
+          ? "/mentor-dashboard"
+          : "/student-dashboard"
+      );
+    } catch (error) {
+      triggerToast("error", error.message || "Login failed.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /* =======================================================
+     SEND OTP
+  ======================================================= */
+
   const handleSendOtp = async (event) => {
     event.preventDefault();
-    setModalStatus({ type: "", message: "" });
 
-    if (!resetEmail.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
+    setModalStatus({
+      type: "",
+      message: "",
+    });
+
+    setOtpError("");
+
+    /* EMAIL VALIDATION */
+
+    if (
+      !resetEmail
+        .toLowerCase()
+        .endsWith("@rajalakshmi.edu.in")
+    ) {
       setModalStatus({
         type: "error",
-        message: "Email must end with @rajalakshmi.edu.in",
+        message:
+          "Email must end with @rajalakshmi.edu.in",
       });
+
       return;
     }
 
     setIsModalLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      const normalizedEmail = resetEmail.trim().toLowerCase();
+      const data = await requestPasswordOtp(normalizedEmail);
+
+      setResetEmail(normalizedEmail);
+      setOtp("");
       setForgotStep(2);
       setModalStatus({
         type: "success",
-        message: `An OTP has been sent to ${resetEmail}`,
+        message: data.message || `OTP sent to ${normalizedEmail}`,
       });
-    } catch {
+
+      setTimeout(() => {
+        otpRefs.current[0]?.focus();
+      }, 100);
+    } catch (error) {
       setModalStatus({
         type: "error",
-        message: "Backend server is not running. Unable to send OTP.",
+        message: error.message || "Unable to send OTP.",
       });
     } finally {
       setIsModalLoading(false);
     }
   };
 
+  /* =======================================================
+     OTP CHANGE
+  ======================================================= */
+
+  const handleOtpChange = (index, value) => {
+    /*
+      Only allow one number.
+    */
+
+    if (!/^\d?$/.test(value)) {
+      return;
+    }
+
+    const otpArray = otp
+      .padEnd(6, "")
+      .split("");
+
+    otpArray[index] = value;
+
+    const newOtp = otpArray
+      .join("")
+      .slice(0, 6);
+
+    setOtp(newOtp);
+
+    setOtpError("");
+
+    /*
+      Move to next box automatically.
+    */
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  /* =======================================================
+     OTP KEYBOARD CONTROL
+  ======================================================= */
+
+  const handleOtpKeyDown = (index, event) => {
+    /*
+      Backspace
+    */
+
+    if (
+      event.key === "Backspace" &&
+      !otp[index] &&
+      index > 0
+    ) {
+      otpRefs.current[index - 1]?.focus();
+    }
+
+    /*
+      Arrow Left
+    */
+
+    if (
+      event.key === "ArrowLeft" &&
+      index > 0
+    ) {
+      otpRefs.current[index - 1]?.focus();
+    }
+
+    /*
+      Arrow Right
+    */
+
+    if (
+      event.key === "ArrowRight" &&
+      index < 5
+    ) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  /* =======================================================
+     OTP PASTE
+  ======================================================= */
+
+  const handleOtpPaste = (event) => {
+    event.preventDefault();
+
+    const pastedValue = event.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+
+    if (!pastedValue) return;
+
+    setOtp(pastedValue);
+
+    setOtpError("");
+
+    const focusIndex = Math.min(
+      pastedValue.length,
+      5
+    );
+
+    setTimeout(() => {
+      otpRefs.current[focusIndex]?.focus();
+    }, 0);
+  };
+
+  /* =======================================================
+     VERIFY OTP
+  ======================================================= */
+
+  const handleVerifyOtp = async (event) => {
+    event.preventDefault();
+
+    setOtpError("");
+
+    if (otp.length !== 6) {
+      setOtpError(
+        "Please enter the complete 6-digit OTP."
+      );
+
+      return;
+    }
+
+    setIsOtpVerifying(true);
+
+    try {
+      const data = await verifyPasswordOtp(resetEmail, otp);
+
+      if (data.success) {
+        setOtp("");
+        setModalStatus({
+          type: "success",
+          message: "OTP verified successfully.",
+        });
+
+        setTimeout(() => {
+          setForgotStep(3);
+          setModalStatus({ type: "", message: "" });
+        }, 700);
+      }
+    } catch (error) {
+      setOtpError(error.message || "Invalid or expired OTP.");
+    } finally {
+      setIsOtpVerifying(false);
+    }
+  };
+
+  /* =======================================================
+     RESEND OTP
+  ======================================================= */
+
+  const handleResendOtp = async () => {
+    setResendLoading(true);
+
+    setOtp("");
+
+    setOtpError("");
+
+    setModalStatus({
+      type: "",
+      message: "",
+    });
+
+    try {
+      await requestPasswordOtp(resetEmail);
+      setModalStatus({
+        type: "success",
+        message: "A new OTP has been sent to your email.",
+      });
+
+      setTimeout(() => {
+        otpRefs.current[0]?.focus();
+      }, 100);
+    } catch (error) {
+      setOtpError(error.message || "Unable to resend OTP.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  /* =======================================================
+     RESET PASSWORD
+  ======================================================= */
+
   const handleResetPassword = async (event) => {
     event.preventDefault();
-    setModalStatus({ type: "", message: "" });
+
+    setModalStatus({
+      type: "",
+      message: "",
+    });
+
+    /* PASSWORD MATCH */
 
     if (newPassword !== confirmPassword) {
       setModalStatus({
         type: "error",
-        message: "Passwords do not match.",
+        message:
+          "Passwords do not match.",
+      });
+
+      return;
+    }
+
+    /* PASSWORD LENGTH */
+
+    if (newPassword.length < 8) {
+      setModalStatus({
+        type: "error",
+        message:
+          "Password must contain at least 8 characters.",
+      });
+
+      return;
+    }
+
+    /* PASSWORD MAXIMUM LENGTH */
+
+    if (newPassword.length > 128) {
+      setModalStatus({
+        type: "error",
+        message: "Password must contain no more than 128 characters.",
       });
       return;
     }
@@ -353,477 +708,782 @@ export default function AuthPage() {
     setIsModalLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      const data = await resetPassword(newPassword, confirmPassword);
+
       setModalStatus({
         type: "success",
-        message: "Password updated successfully!",
+        message: data.message || "Password updated successfully!",
       });
-      setTimeout(() => {
-        closeModal();
-      }, 1500);
-    } catch {
+
+      setTimeout(() => closeModal(), 1500);
+    } catch (error) {
       setModalStatus({
         type: "error",
-        message: "Backend server is not running or invalid OTP.",
+        message: error.message || "Unable to update password.",
       });
     } finally {
       setIsModalLoading(false);
     }
   };
+
+  /* =======================================================
+     CLOSE MODAL
+  ======================================================= */
+
   const closeModal = () => {
     setIsForgotModalOpen(false);
+
     setForgotStep(1);
+
     setResetEmail("");
+
     setOtp("");
+
+    setOtpError("");
+
     setNewPassword("");
+
     setConfirmPassword("");
-    setModalStatus({ type: "", message: "" });
+
+    setModalStatus({
+      type: "",
+      message: "",
+    });
+
+    setIsModalLoading(false);
+
+    setIsOtpVerifying(false);
+
+    setResendLoading(false);
   };
+
+  /* =======================================================
+     RETURN
+  ======================================================= */
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-white/90 backdrop-blur-md p-4 md:p-8 lg:p-12 font-sans">
-      {/* BACKGROUND PHOTO (real <img> layer, sits behind everything) */}
+
+      {/* =====================================================
+          BACKGROUND PHOTO
+      ===================================================== */}
+
       <img
         src={collegeBg}
         alt=""
         className="absolute inset-0 z-0 h-full w-full object-cover object-center"
       />
 
-      {/* Dark overlay so the sign-in box stands out from the photo */}
+      {/* =====================================================
+          DARK OVERLAY
+      ===================================================== */}
+
       <div className="absolute inset-0 z-0 bg-black/40 pointer-events-none" />
 
-      {/* SLIDING TOP TOAST NOTIFICATION */}
-      <div
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out transform ${
-          toast.show
-            ? "translate-y-0 opacity-100 scale-100"
-            : "-translate-y-16 opacity-0 scale-95 pointer-events-none"
-        }`}
-      >
-        <div
-          className={`flex items-center space-x-3 px-6 py-3.5 rounded-xl shadow-2xl border text-sm font-semibold max-w-md ${
-            toast.type === "success"
-              ? "bg-emerald-700 text-white border-emerald-600"
-              : "bg-red-700 text-white border-red-600"
-          }`}
-        >
-          {toast.type === "error" ? (
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-5 h-5 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          )}
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast({ ...toast, show: false })}
-            className="ml-auto text-white/80 hover:text-white"
-          >
-            &times;
-          </button>
-        </div>
-      </div>
+      {/* =====================================================
+    SHADCN ALERT NOTIFICATION
+===================================================== */}
 
-      {/* CENTERED CONTAINER WRAPPER */}
-      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col my-auto">
-        {/* MAIN DUAL PANEL CONTAINER — BLACK SHADOW ADDED HERE */}
-        <div className="w-full rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.55),0_8px_20px_rgba(0,0,0,0.35)] flex flex-col md:flex-row overflow-hidden border border-slate-200/80">
-          
-          {/* LEFT PANEL */}
-<div className="relative w-full md:w-1/2 bg-[#082F3D] text-white flex flex-col justify-between px-8 md:px-12 lg:px-14 py-10 md:py-12 lg:py-14 min-h-[520px]">
+<div
+  className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 transition-all duration-500 ease-in-out ${
+    toast.show
+      ? "translate-y-0 opacity-100 scale-100"
+      : "-translate-y-16 opacity-0 scale-95 pointer-events-none"
+  }`}
+>
+  <Alert
+    variant={toast.type === "error" ? "destructive" : "default"}
+    className={`relative overflow-hidden bg-white shadow-2xl rounded-xl border ${
+      toast.type === "success"
+        ? "border-emerald-200"
+        : toast.type === "error"
+        ? "border-red-200"
+        : "border-blue-200"
+    }`}
+  >
+    {/* ICON */}
 
-  {/* Background library image */}
-  <div
-    className="absolute inset-0 opacity-[0.18] pointer-events-none"
-    style={{
-      backgroundImage:
-        "url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1000&auto=format&fit=crop')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    }}
-  />
+    {toast.type === "success" ? (
+      <CheckCircle2Icon className="h-5 w-5 text-emerald-600" />
+    ) : toast.type === "error" ? (
+      <CircleAlert className="h-5 w-5 text-red-600" />
+    ) : (
+      <InfoIcon className="h-5 w-5 text-blue-600" />
+    )}
 
-  {/* Dark navy overlay */}
-  <div className="absolute inset-0 bg-[#082F3D]/75 pointer-events-none" />
+    {/* CONTENT */}
 
-  {/* Top Brand Info */}
-  <div className="relative z-10 flex items-center space-x-4">
-    <div className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 flex items-center justify-center">
-      <FixedGraduationCap />
-    </div>
-
-    <div>
-      <h1 className="text-xl font-serif font-semibold tracking-wide text-slate-100">
-        Scholar Portal
-      </h1>
-
-      <p className="text-[11px] tracking-widest text-slate-400 uppercase font-medium mt-0.5">
-        RAJALAKSHMI ENGINEERING COLLEGE
-      </p>
-    </div>
-  </div>
-
-  {/* Center Main Content */}
-  <div className="relative z-10 my-auto py-6">
-
-    <div className="w-full h-[2px] bg-amber-500/90 mb-6" />
-
-    <h2 className="text-3xl md:text-4xl font-serif font-normal text-white leading-tight">
-      Dream believe achieve
-    </h2>
-
-    <p className="text-xs text-slate-300 mt-4 tracking-wider">
-      Learn &rarr; Grow &rarr; Consistent &rarr; Success.
-    </p>
-
-    <div className="w-full h-[2px] bg-amber-500/90 mt-6" />
-
-  </div>
-
-  {/* Bottom Security Footer */}
-  <div className="relative z-10 flex items-center space-x-2 text-[11px] tracking-widest text-slate-300 uppercase font-medium">
-
-    <svg
-      className="w-4 h-4 text-amber-500"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
+    <AlertTitle
+      className={
+        toast.type === "success"
+          ? "text-emerald-800"
+          : toast.type === "error"
+          ? "text-red-800"
+          : "text-blue-800"
+      }
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-      />
-    </svg>
+      {toast.type === "success"
+        ? "Success"
+        : toast.type === "error"
+        ? "Something went wrong"
+        : "Information"}
+    </AlertTitle>
 
-    <span>SCHOLAR PORTAL</span>
+    <AlertDescription
+      className={
+        toast.type === "success"
+          ? "text-emerald-700"
+          : toast.type === "error"
+          ? "text-red-700"
+          : "text-blue-700"
+      }
+    >
+      {toast.message}
+    </AlertDescription>
 
-  </div>
+    {/* CLOSE BUTTON */}
 
+    <button
+      type="button"
+      onClick={() =>
+        setToast({
+          ...toast,
+          show: false,
+        })
+      }
+      className="absolute right-3 top-3 text-slate-400 hover:text-slate-700 transition-colors"
+      aria-label="Close notification"
+    >
+      <span className="text-lg leading-none">&times;</span>
+    </button>
+
+    {/* PROGRESS BAR */}
+
+    <motion.div
+      initial={{ width: "100%" }}
+      animate={{ width: toast.show ? "0%" : "100%" }}
+      transition={{
+        duration: 4,
+        ease: "linear",
+      }}
+      className={`absolute bottom-0 left-0 h-1 ${
+        toast.type === "success"
+          ? "bg-emerald-500"
+          : toast.type === "error"
+          ? "bg-red-500"
+          : "bg-blue-500"
+      }`}
+    />
+  </Alert>
 </div>
-          {/* RIGHT PANEL */}
-          <div className="w-full md:w-1/2 bg-white px-8 md:px-12 lg:px-14 py-10 md:py-12 lg:py-14 flex flex-col justify-between">
-            <div>
-              {/* ROLE SWITCHER */}
-              <div className="flex justify-end mb-8">
-                <div className="relative bg-[#EAEFF5] p-1.5 rounded-lg flex items-center w-64">
-                  <div
-                    className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-[#18263E] rounded-md shadow-sm transition-transform duration-500 ease-in-out ${
-                      isMentor ? "translate-x-[100%]" : "translate-x-0"
-                    }`}
-                  />
 
-                  <button
-                    type="button"
-                    onClick={() => handleRoleChange("student")}
-                    className={`relative z-10 flex-1 flex items-center justify-center space-x-2 py-1.5 text-xs font-bold tracking-wider transition-colors duration-300 ${
-                      !isMentor ? "text-white" : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    <StudentIcon />
-                    <span>STUDENT</span>
-                  </button>
+      {/* =====================================================
+          CENTER CONTAINER
+      ===================================================== */}
 
-                  <button
-                    type="button"
-                    onClick={() => handleRoleChange("mentor")}
-                    className={`relative z-10 flex-1 flex items-center justify-center space-x-2 py-1.5 text-xs font-bold tracking-wider transition-colors duration-300 ${
-                      isMentor ? "text-white" : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    <MentorIcon />
-                    <span>MENTOR</span>
-                  </button>
-                </div>
+      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col my-auto">
+
+        {/* ===================================================
+            MAIN DUAL PANEL
+        =================================================== */}
+
+        <div className="w-full rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.55),0_8px_20px_rgba(0,0,0,0.35)] flex flex-col md:flex-row overflow-hidden border border-slate-200/80">
+
+          {/* =================================================
+              LEFT PANEL
+          ================================================= */}
+
+          <div className="relative w-full md:w-1/2 bg-[#082F3D] text-white flex flex-col justify-between px-8 md:px-12 lg:px-14 py-10 md:py-12 lg:py-14 min-h-[520px]">
+
+            {/* Background library */}
+
+            <div
+              className="absolute inset-0 opacity-[0.18] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1000&auto=format&fit=crop')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            />
+
+            {/* Dark overlay */}
+
+            <div className="absolute inset-0 bg-[#082F3D]/75 pointer-events-none" />
+
+            {/* BRAND */}
+
+            <div className="relative z-10 flex items-center space-x-4">
+
+              <div className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 flex items-center justify-center">
+                <FixedGraduationCap />
               </div>
 
-              {/* Title Section */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-serif text-slate-800 font-normal">
-                  Sign in
-                </h2>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                  {isMentor
-                    ? "Review submissions, publish feedback and manage your cohorts."
-                    : "Track your learning progress and connect with mentors."}
+              <div>
+
+                <h1 className="text-xl font-serif font-semibold tracking-wide text-slate-100">
+                  Scholar Portal
+                </h1>
+
+                <p className="text-[11px] tracking-widest text-slate-400 uppercase font-medium mt-0.5">
+                  RAJALAKSHMI ENGINEERING COLLEGE
                 </p>
+
               </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-5">
+            </div>
+
+            {/* CENTER CONTENT */}
+
+            <div className="relative z-10 my-auto py-6">
+
+              <div className="w-full h-[2px] bg-amber-500/90 mb-6" />
+
+              <h2 className="text-3xl md:text-4xl font-serif font-normal text-white leading-tight">
+                Dream believe achieve
+              </h2>
+
+              <p className="text-xs text-slate-300 mt-4 tracking-wider">
+                Learn &rarr; Grow &rarr; Consistent &rarr; Success.
+              </p>
+
+              <div className="w-full h-[2px] bg-amber-500/90 mt-6" />
+
+            </div>
+
+            {/* SECURITY FOOTER */}
+
+            <div className="relative z-10 flex items-center space-x-2 text-[11px] tracking-widest text-slate-300 uppercase font-medium">
+
+              <svg
+                className="w-4 h-4 text-amber-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 00-8.618 3.04A12.025 12.025 0 002 12c0 1.852.396 3.605 1.086 5.207M16 8h6M16 12h6m-7 4h7"
+                />
+              </svg>
+
+              <p className="leading-none">
+                Secure login with industry-standard encryption.
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* =================================================
+              RIGHT PANEL
+          ================================================= */}
+
+          <div className="relative w-full md:w-1/2 bg-white text-slate-800 flex flex-col overflow-hidden">
+
+            {/* SHIMMER EFFECT */}
+
+            <div className="absolute inset-0 z-10 overflow-hidden">
+              <div className="h-1/2 bg-gradient-to-b from-white to-transparent" />
+              <div className="h-1/2 bg-gradient-to-t from-white to-transparent" />
+            </div>
+
+            {/* FORM CONTAINER */}
+
+            <div className="relative z-20 flex-1 p-6 md:p-8 lg:p-10 flex flex-col justify-center">
+
+              {/* TABS */}
+
+              <div className="flex items-center justify-center space-x-2 mb-8">
+
+                <button
+                  onClick={() => handleRoleChange("student")}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center space-x-2 ${
+                    role === "student"
+                      ? "bg-amber-500 text-white shadow-md"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  <StudentIcon />
+
+                  <span>Student</span>
+                </button>
+
+                <button
+                  onClick={() => handleRoleChange("mentor")}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center space-x-2 ${
+                    role === "mentor"
+                      ? "bg-amber-500 text-white shadow-md"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  <MentorIcon />
+
+                  <span>Mentor</span>
+                </button>
+              </div>
+
+              {/* TITLE */}
+
+              <h2 className="text-2xl md:text-3xl font-serif font-semibold tracking-tight mb-6 text-center">
+                {role === "student"
+                  ? "Student Login"
+                  : "Mentor Login"}
+              </h2>
+
+              {/* FORM */}
+
+              <form
+                onSubmit={handleSubmit}
+                className="space-y-4"
+              >
+                {/* EMAIL */}
+
                 <div>
                   <label
                     htmlFor="email"
-                    className="mb-1.5 block text-[11px] font-bold text-slate-500 uppercase tracking-wider"
+                    className="block text-sm font-medium text-slate-700"
                   >
-                    Institutional Email ID
+                    Official Email
                   </label>
-                  <div className="relative flex items-center">
-                    <div className="absolute left-3.5 pointer-events-none">
-                      <UserInputIcon />
-                    </div>
+
+                  <div className="relative mt-1">
+                    <UserInputIcon />
+
                     <input
-                      id="email"
                       type="email"
-                      required
-                      autoComplete="email"
+                      id="email"
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder={
-                        isMentor
-                          ? "Enter faculty email "
-                          : "Enter student email "
-                      }
-                      className="w-full rounded-lg border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full h-12 pl-10 pr-4 text-sm rounded-lg border transition-all focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      placeholder="you@rajalakshmi.edu.in"
                     />
                   </div>
                 </div>
 
+                {/* PASSWORD */}
+
                 <div>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <label
-                      htmlFor="password"
-                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider"
-                    >
-                      PASSWORD
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotModalOpen(true)}
-                      className="text-xs text-slate-500 hover:text-slate-800 transition"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <div className="relative flex items-center">
-                    <div className="absolute left-3.5 pointer-events-none">
-                      <LockIcon />
-                    </div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Password
+                  </label>
+
+                  <div className="relative mt-1">
+                    <LockIcon />
+
                     <input
-                      id="password"
                       type={showPassword ? "text" : "password"}
-                      required
-                      autoComplete="current-password"
+                      id="password"
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Enter your confidential password"
-                      className="w-full rounded-lg border border-slate-200 bg-white pl-10 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full h-12 pl-10 pr-4 text-sm rounded-lg border transition-all focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      placeholder="Enter your password"
                     />
+
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 flex items-center justify-center"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      aria-label="Toggle password visibility"
                     >
                       <EyeIcon show={showPassword} />
                     </button>
                   </div>
                 </div>
 
-                {/* Action Button */}
-                {/* Action Button */}
-<div className="relative mt-2">
-  <motion.button
-    type="submit"
-    disabled={isLoading}
-    whileTap={{ scale: 0.97 }}
-    className="relative w-full overflow-visible rounded-lg py-3 text-xs font-semibold text-white transition-all duration-200 bg-[#18263E] hover:bg-[#121C2E] flex items-center justify-center space-x-2 disabled:cursor-not-allowed disabled:opacity-50 shadow-md"
-  >
-    {showParticles && <SuccessParticles />}
+                {/* SUBMIT BUTTON */}
 
-    <MousePointerClick className="w-4 h-4" />
+                <div>
+                  <button
+                    type="submit"
+                    className="w-full h-12 px-4 text-sm font-semibold rounded-lg bg-amber-500 text-white transition-all flex items-center justify-center space-x-2 hover:bg-amber-600"
+                    disabled={isLoading}
+                  >
+                    {isLoading && (
+                      <svg
+                        className="animate-spin h-5 w-5 mr-3 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          className="opacity-25"
+                        />
 
-    <span>
-      {isLoading ? "Signing in..." : `Sign in as ${role}`}
-    </span>
+                        <path
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    )}
 
-    {!isLoading && <span>&rarr;</span>}
-  </motion.button>
-</div>
+                    <span>
+                      {role === "student"
+                        ? "Student Login"
+                        : "Mentor Login"}
+                    </span>
+                  </button>
+                </div>
+
+                {/* FORGOT PASSWORD LINK */}
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(true)}
+                    className="text-sm text-amber-500 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </form>
             </div>
           </div>
         </div>
-
-        {/* EXTERNAL FOOTER LINKS */}
-        <div className="w-full mt-4 flex flex-col md:flex-row items-center justify-between text-xs text-slate-100 px-2">
-          <div className="flex items-center space-x-6">
-            <a href="#about" className="hover:text-white transition">
-              About
-            </a>
-            <a href="#help" className="hover:text-white transition">
-              Help center
-            </a>
-            <a href="#terms" className="hover:text-white transition">
-              Terms of use
-            </a>
-            <a href="#privacy" className="hover:text-white transition">
-              Privacy policy
-            </a>
-          </div>
-          <span className="mt-2 md:mt-0 text-slate-100">
-            © 2026 Scholar Hub, Inc.
-          </span>
-        </div>
       </div>
 
-      {/* Reset Password Modal */}
+      {/* =====================================================
+          FORGOT PASSWORD MODAL
+      ===================================================== */}
+
       {isForgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h2 className="text-lg font-serif font-semibold text-slate-800">
-                  Reset Password
-                </h2>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Recover access to your account
-                </p>
-              </div>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+            {/* HEADER */}
+
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-800">
+                Reset Password
+              </h3>
 
               <button
-                type="button"
                 onClick={closeModal}
-                className="text-xl leading-none text-slate-400 hover:text-slate-700 transition"
+                className="text-slate-400 hover:text-slate-600"
+                aria-label="Close"
               >
                 &times;
               </button>
             </div>
 
-            {modalStatus.message && (
-              <div
-                className={`mt-4 rounded-lg border p-3 text-xs ${
-                  modalStatus.type === "success"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-red-200 bg-red-50 text-red-700"
-                }`}
-              >
-                {modalStatus.message}
-              </div>
-            )}
+            {/* CONTENT */}
 
-            {forgotStep === 1 && (
-              <form onSubmit={handleSendOtp} className="mt-4 space-y-4">
-                <p className="text-xs text-slate-600">
-                  Enter your registered institutional email address ending with @rajalakshmi.edu.in to receive an OTP code.
-                </p>
+            <div className="space-y-4">
+              {/* STEP 1: EMAIL */}
 
+              {forgotStep === 1 && (
                 <div>
-                  <label
-                    htmlFor="resetEmail"
-                    className="mb-1 block text-xs font-medium text-slate-700"
+                  <p className="text-sm text-slate-500 mb-4">
+                    Enter your official email to receive the password reset OTP.
+                  </p>
+
+                  <form
+                    onSubmit={handleSendOtp}
+                    className="space-y-4"
                   >
-                    Institutional Email Address
-                  </label>
-                  <input
-                    id="resetEmail"
-                    type="email"
-                    required
-                    value={resetEmail}
-                    onChange={(event) => setResetEmail(event.target.value)}
-                    placeholder="Enter official email (e.g., name@rajalakshmi.edu.in)"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
+                    {/* EMAIL INPUT */}
+
+                    <div>
+                      <label
+                        htmlFor="reset-email"
+                        className="block text-sm font-medium text-slate-700"
+                      >
+                        Official Email
+                      </label>
+
+                      <div className="relative mt-1">
+                        <UserInputIcon />
+
+                        <input
+                          type="email"
+                          id="reset-email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          required
+                          className="w-full h-12 pl-10 pr-4 text-sm rounded-lg border transition-all focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                          placeholder="you@rajalakshmi.edu.in"
+                        />
+                      </div>
+                    </div>
+
+                    {/* SUBMIT BUTTON */}
+
+                    <div>
+                      <button
+                        type="submit"
+                        className="w-full h-12 px-4 text-sm font-semibold rounded-lg bg-amber-500 text-white transition-all flex items-center justify-center space-x-2 hover:bg-amber-600"
+                        disabled={isModalLoading}
+                      >
+                        {isModalLoading && (
+                          <svg
+                            className="animate-spin h-5 w-5 mr-3 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              className="opacity-25"
+                            />
+
+                            <path
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        )}
+
+                        <span>Send OTP</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={isModalLoading}
-                  className="w-full rounded-md bg-[#18263E] hover:bg-[#121C2E] py-2 text-xs font-semibold text-white shadow disabled:opacity-50"
-                >
-                  {isModalLoading ? "Sending OTP..." : "Send OTP"}
-                </button>
-              </form>
-            )}
+              {/* STEP 2: OTP VERIFICATION */}
 
-            {forgotStep === 2 && (
-              <form onSubmit={handleResetPassword} className="mt-4 space-y-3">
+              {forgotStep === 2 && (
                 <div>
-                  <label
-                    htmlFor="otp"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    OTP Code
-                  </label>
-                  <input
-                    id="otp"
-                    type="text"
-                    required
-                    value={otp}
-                    onChange={(event) => setOtp(event.target.value)}
-                    placeholder="Enter 6-digit OTP code"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Enter the OTP sent to{" "}
+                    <span className="font-semibold">{resetEmail}</span>
+                  </p>
 
+                  <form
+                    onSubmit={handleVerifyOtp}
+                    className="space-y-4"
+                  >
+                    {/* OTP INPUTS */}
+
+                    <div className="grid grid-cols-6 gap-2">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <div key={index}>
+                          <input
+                            type="text"
+                            maxLength={1}
+                            value={otp[index] || ""}
+                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                            ref={(el) => (otpRefs.current[index] = el)}
+                            className="w-full h-12 text-center text-2xl font-semibold rounded-lg border transition-all focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ERROR MESSAGE */}
+
+                    {otpError && (
+                      <p className="text-sm text-red-500">
+                        {otpError}
+                      </p>
+                    )}
+
+                    {/* SUBMIT BUTTON */}
+
+                    <div>
+                      <button
+                        type="submit"
+                        className="w-full h-12 px-4 text-sm font-semibold rounded-lg bg-amber-500 text-white transition-all flex items-center justify-center space-x-2 hover:bg-amber-600"
+                        disabled={isOtpVerifying}
+                      >
+                        {isOtpVerifying && (
+                          <svg
+                            className="animate-spin h-5 w-5 mr-3 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              className="opacity-25"
+                            />
+
+                            <path
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        )}
+
+                        <span>Verify OTP</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* RESEND OTP LINK */}
+
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={handleResendOtp}
+                      className="text-sm text-amber-500 hover:underline"
+                      disabled={resendLoading}
+                    >
+                      {resendLoading
+                        ? "Resending..."
+                        : "Resend OTP"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: NEW PASSWORD */}
+
+              {forgotStep === 3 && (
                 <div>
-                  <label
-                    htmlFor="newPassword"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    New Password
-                  </label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    required
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    placeholder="Enter new strong password"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Enter a new password for your account.
+                  </p>
 
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="mb-1 block text-xs font-medium text-slate-700"
+                  <form
+                    onSubmit={handleResetPassword}
+                    className="space-y-4"
                   >
-                    Confirm Password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    placeholder="Re-enter new password to confirm"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
+                    {/* NEW PASSWORD */}
 
-                <button
-                  type="submit"
-                  disabled={isModalLoading}
-                  className="w-full rounded-md bg-[#18263E] hover:bg-[#121C2E] py-2 text-xs font-semibold text-white shadow disabled:opacity-50"
-                >
-                  {isModalLoading ? "Updating..." : "Update Password"}
-                </button>
-              </form>
-            )}
+                    <div>
+                      <label
+                        htmlFor="new-password"
+                        className="block text-sm font-medium text-slate-700"
+                      >
+                        New Password
+                      </label>
+
+                      <div className="relative mt-1">
+                        <LockIcon />
+
+                        <input
+                          type="password"
+                          id="new-password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                          className="w-full h-12 pl-10 pr-4 text-sm rounded-lg border transition-all focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                          placeholder="Enter new password"
+                        />
+                      </div>
+                    </div>
+
+                    {/* CONFIRM PASSWORD */}
+
+                    <div>
+                      <label
+                        htmlFor="confirm-password"
+                        className="block text-sm font-medium text-slate-700"
+                      >
+                        Confirm Password
+                      </label>
+
+                      <div className="relative mt-1">
+                        <LockIcon />
+
+                        <input
+                          type="password"
+                          id="confirm-password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          className="w-full h-12 pl-10 pr-4 text-sm rounded-lg border transition-all focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                    </div>
+
+                    {/* ERROR MESSAGE */}
+
+                    {modalStatus.message && (
+                      <p className={`text-sm ${modalStatus.type === "error" ? "text-red-500" : "text-emerald-500"}`}>
+                        {modalStatus.message}
+                      </p>
+                    )}
+
+                    {/* SUBMIT BUTTON */}
+
+                    <div>
+                      <button
+                        type="submit"
+                        className="w-full h-12 px-4 text-sm font-semibold rounded-lg bg-amber-500 text-white transition-all flex items-center justify-center space-x-2 hover:bg-amber-600"
+                        disabled={isModalLoading}
+                      >
+                        {isModalLoading && (
+                          <svg
+                            className="animate-spin h-5 w-5 mr-3 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              className="opacity-25"
+                            />
+
+                            <path
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        )}
+
+                        <span>Reset Password</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          PARTIAL LOADING SCREEN
+      ===================================================== */}
+
+      {(isLoading || isModalLoading) && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-white/90 backdrop-blur-md">
+          <svg
+            className="animate-spin h-10 w-10 text-amber-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="opacity-25"
+            />
+
+            <path
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              fill="currentColor"
+            />
+          </svg>
         </div>
       )}
     </main>
