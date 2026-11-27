@@ -9,7 +9,10 @@ from app.db.session import get_db
 from app.models.User import User
 from app.dependancies.auth import get_current_user
 from app.schemas.login import LoginRequest
-from app.services.auth import create_access_token, ForgotPasswordRequestOtpRequest,ForgotPasswordVerifyOtpRequest,ForgotPasswordResetRequest
+from app.schemas.auth import ForgotPasswordRequestOtpRequest, ForgotPasswordVerifyOtpRequest, ForgotPasswordResetRequest
+from app.services.auth import create_access_token
+from app.services.send_email import send_otp_email,verify_otp
+from app.services.reset_password import reset_password_with_verified_otp
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -129,7 +132,7 @@ def me(user: User = Depends(get_current_user)):
 
 @router.post("/forgot-password/request-otp")
 @limiter.limit(settings.RATE_LIMIT_AUTH)
-def request_forgot_password_otp(
+async def request_forgot_password_otp(
     request: Request,
     payload: ForgotPasswordRequestOtpRequest | None = Body(default=None),
     db: Session = Depends(get_db),
@@ -151,8 +154,7 @@ def request_forgot_password_otp(
             },
         )
 
-    # Core logic placeholder: check user existence, generate/store OTP, and call your email sender
-    sent = send_otp_email(email=email)
+    sent = await send_otp_email(email=email)
     if not sent:
         return JSONResponse(
             status_code=500,
@@ -190,7 +192,7 @@ def verify_forgot_password_otp(
         )
 
     # Core logic placeholder: validate stored OTP, expiry, and attempt limits
-    is_valid = verify_otp(email=email, otp=otp)
+    is_valid = verify_otp(email=email, entered_otp=otp)
     if not is_valid:
         return JSONResponse(
             status_code=400,
