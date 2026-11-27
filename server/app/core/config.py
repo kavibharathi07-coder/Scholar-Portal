@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings"""
 
-    APP_NAME: str = "DEVS Investiture"
+    APP_NAME: str = "SCHOLAR PORTAL"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     OAUTH_ENABLED_PROVIDERS: List[str] = ["google"]
     
     # Database Configuration
-    DATABASE_URI: str ="postgresql+psycopg://postgres:postgres@localhost:5432/devs_investiture"
+    DATABASE_URI: str ="postgresql+psycopg://postgres:postgres@localhost:5432/scholar_db"
     DB_ECHO: bool = False
 
     # Redis / Celery Configuration
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     # JWT Configuration
     SECRET_KEY: str = "your-secret-key-here-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # QR Code Configuration

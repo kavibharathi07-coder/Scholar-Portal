@@ -43,7 +43,7 @@ services:
       - "${API_PORT:-8000}:8000"
     environment:
       DATABASE_URI: ${DATABASE_URI:-postgresql+psycopg://postgres:postgres@postgres:5432/scholar_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ENVIRONMENT: ${ENVIRONMENT:-docker}
       DEBUG: ${DEBUG:-false}
       SECRET_KEY: ${SECRET_KEY:-replace-this-secret-before-production}

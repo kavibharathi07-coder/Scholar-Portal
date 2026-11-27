@@ -1,20 +1,14 @@
-from starlette.middleware.sessions import SessionMiddleware
-
 from contextlib import asynccontextmanager
-from typing import Callable, cast
 
 import uvicorn
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
+from starlette.middleware.sessions import SessionMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from fastapi import Depends, FastAPI, Request, Response
-from slowapi.errors import RateLimitExceeded
-
-from app.core.rate_limiter import apply_default_limit, limiter, rate_limit_exceeded_handler
+from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
 
 from app.api.v1.api import api_router
 from app.core.config import settings
@@ -35,17 +29,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="DEVS Investiture Backend API",
+    description="SCHOLAR PORTAL Backend API",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
-    dependencies=[Depends(apply_default_limit)],
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
-
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SECRET_KEY,
@@ -79,7 +72,7 @@ async def root():
     """Root endpoint - health check"""
     return JSONResponse(
         content={
-            "message": "DEVS Investiture API",
+            "message": "SCHOLAR PORTAL API",
             "version": settings.APP_VERSION,
             "status": "running",
             "docs": "/api/docs",
