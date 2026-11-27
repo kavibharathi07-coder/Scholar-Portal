@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '../services/authService';
 
 // Sample Groups with Students
 const GROUPS_DATA = [
@@ -74,6 +76,8 @@ export default function MentorDashboard() {
   const [reportStatuses, setReportStatuses] = useState({}); // e.g. { 's1': 'Approved' }
   const [feedbackNote, setFeedbackNote] = useState('');
 
+  const navigate = useNavigate();
+
   const currentGroup = groups.find((g) => g.groupId === selectedGroupId) || groups[0];
   const currentStudent = currentGroup.students.find((s) => s.id === selectedStudentId) || currentGroup.students[0];
 
@@ -118,6 +122,16 @@ export default function MentorDashboard() {
     setFeedbackNote('');
   };
 
+  const handleSignOut = async () => {
+    try {
+      await logoutUser();
+    } catch {
+      // The local route should still be cleared even if the cookie already expired.
+    } finally {
+      navigate("/", { replace: true });
+    }
+  };
+
   const currentStudentStatus = reportStatuses[currentStudent?.id] || 'Pending Review';
 
   return (
@@ -151,6 +165,13 @@ export default function MentorDashboard() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+            >
+              Sign Out
+            </button>
           </div>
         </header>
 

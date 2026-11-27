@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { logoutUser } from "../services/authService";
 
 import {
   ChevronRight,
@@ -87,6 +89,8 @@ const INITIAL_TASKS = {
 // ==================================================
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
+
   // ==================================================
   // TASK STATES
   // ==================================================
@@ -374,17 +378,16 @@ export default function StudentDashboard() {
   // SIGN OUT
   // ==================================================
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setIsOpen(false);
 
-    localStorage.removeItem(
-      "authToken"
-    );
-
-    console.log("Sign out clicked");
-
-    // Later:
-    // window.location.href = "/";
+    try {
+      await logoutUser();
+    } catch {
+      // Redirect even if the cookie has already expired or the server is unreachable.
+    } finally {
+      navigate("/", { replace: true });
+    }
   };
 
   // ==================================================

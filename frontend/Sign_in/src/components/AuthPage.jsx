@@ -1,4 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  loginUser,
+  requestPasswordOtp,
+  verifyPasswordOtp,
+  resetPassword,
+} from "../services/authService";
 
 function FixedGraduationCap() {
   return (
@@ -167,6 +174,7 @@ export default function AuthPage() {
   const [isModalLoading, setIsModalLoading] = useState(false);
 
   const isMentor = role === "mentor";
+  const navigate = useNavigate();
 
   const triggerToast = (type, message) => {
     setToast({ show: true, type, message });
@@ -187,8 +195,7 @@ export default function AuthPage() {
     event.preventDefault();
     setToast({ show: false, type: "", message: "" });
 
-    // Validate email extension
-    if (!email.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
+    if (!email.trim().toLowerCase().endsWith("@rajalakshmi.edu.in")) {
       triggerToast(
         "error",
         "Please enter a valid official email ending with @rajalakshmi.edu.in"
@@ -196,46 +203,24 @@ export default function AuthPage() {
       return;
     }
 
+    if (!password) {
+      triggerToast("error", "Password is required.");
+      return;
+    }
+
     setIsLoading(true);
 
-    const payload = {
-      user_type: role,
-      email: email,
-      password: password,
-    };
-
     try {
-      const response = await fetch("https://your-api-endpoint.com/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      const data = await loginUser({
+        email,
+        password,
+        role,
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        if (data.token) {
-          localStorage.setItem("authToken", data.token);
-        }
-
-        triggerToast(
-          "success",
-          data.message || "Login successful! Redirecting..."
-        );
-      } else {
-        triggerToast(
-          "error",
-          data.message || "Invalid credentials provided."
-        );
-      }
-    } catch (err) {
-      // Handles network failure or server unreachable condition
-      triggerToast(
-        "error",
-        "Backend server is not running. Please start the server and try again."
-      );
+      triggerToast("success", data.message || "Login successful! Redirecting...");
+      navigate(data.user.role === "mentor" ? "/mentor-dashboard" : "/student-dashboard");
+    } catch (error) {
+      triggerToast("error", error.message || "Login failed.");
     } finally {
       setIsLoading(false);
     }
@@ -245,7 +230,9 @@ export default function AuthPage() {
     event.preventDefault();
     setModalStatus({ type: "", message: "" });
 
-    if (!resetEmail.toLowerCase().endsWith("@rajalakshmi.edu.in")) {
+    const normalizedEmail = resetEmail.trim().toLowerCase();
+
+    if (!normalizedEmail.endsWith("@rajalakshmi.edu.in")) {
       setModalStatus({
         type: "error",
         message: "Email must end with @rajalakshmi.edu.in",
@@ -256,16 +243,17 @@ export default function AuthPage() {
     setIsModalLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      const data = await requestPasswordOtp(normalizedEmail);
+      setResetEmail(normalizedEmail);
       setForgotStep(2);
       setModalStatus({
         type: "success",
-        message: `An OTP has been sent to ${resetEmail}`,
+        message: data.message || `An OTP has been sent to ${normalizedEmail}`,
       });
-    } catch {
+    } catch (error) {
       setModalStatus({
         type: "error",
-        message: "Backend server is not running. Unable to send OTP.",
+        message: error.message || "Unable to send OTP.",
       });
     } finally {
       setIsModalLoading(false);
@@ -277,9 +265,14 @@ export default function AuthPage() {
     setModalStatus({ type: "", message: "" });
 
     if (newPassword !== confirmPassword) {
+      setModalStatus({ type: "error", message: "Passwords do not match." });
+      return;
+    }
+
+    if (newPassword.length < 8 || newPassword.length > 128) {
       setModalStatus({
         type: "error",
-        message: "Passwords do not match.",
+        message: "Password must contain 8 to 128 characters.",
       });
       return;
     }
@@ -287,18 +280,26 @@ export default function AuthPage() {
     setIsModalLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      if (!/^\d{6}$/.test(otp)) {
+        setModalStatus({
+          type: "error",
+          message: "Please enter the complete 6-digit OTP.",
+        });
+        return;
+      }
+
+      await verifyPasswordOtp(resetEmail, otp);
+
+      const data = await resetPassword(newPassword, confirmPassword);
       setModalStatus({
         type: "success",
-        message: "Password updated successfully!",
+        message: data.message || "Password updated successfully!",
       });
-      setTimeout(() => {
-        closeModal();
-      }, 1500);
-    } catch {
+      setTimeout(() => closeModal(), 1500);
+    } catch (error) {
       setModalStatus({
         type: "error",
-        message: "Backend server is not running or invalid OTP.",
+        message: error.message || "Unable to reset password.",
       });
     } finally {
       setIsModalLoading(false);
@@ -437,305 +438,407 @@ export default function AuthPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.025 12.025 0 002 12c0 1.104.896 2 2 2h1.618a11.955 11.955 0 018.618 3.04A11.955 11.955 0 0112 21.056a11.955 11.955 0 018.618-3.04A11.955 11.955 0 0122 12c0-1.104-.896-2-2-2h-1.618a11.955 11.955 0 01-8.618-3.04A11.955 11.955 0 0112 2.944z"
                 />
               </svg>
-              <span>SCHOLAR PORTAL</span>
+              <span className="text-amber-600/90">
+                Secure login with 256-bit encryption
+              </span>
             </div>
           </div>
 
-          {/* RIGHT PANEL */}
-          <div className="w-full md:w-1/2 bg-white px-8 md:px-12 lg:px-14 py-10 md:py-12 lg:py-14 flex flex-col justify-between">
-            <div>
-              {/* ROLE SWITCHER */}
-              <div className="flex justify-end mb-8">
-                <div className="relative bg-[#EAEFF5] p-1.5 rounded-lg flex items-center w-64">
-                  <div
-                    className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-[#18263E] rounded-md shadow-sm transition-transform duration-500 ease-in-out ${
-                      isMentor ? "translate-x-[100%]" : "translate-x-0"
-                    }`}
+          {/* RIGHT PANEL - LOGIN FORM */}
+          <div className="relative w-full md:w-1/2 bg-white flex flex-col justify-between px-8 md:px-12 lg:px-14 py-10 md:py-12 lg:py-14">
+            {/* Top Switcher Tabs */}
+            <div className="flex items-center justify-center space-x-2 mb-8">
+              <button
+                onClick={() => handleRoleChange("student")}
+                className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
+                  role === "student"
+                    ? "bg-amber-500 text-white shadow-md"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                <StudentIcon />
+                <span className="text-sm">Student</span>
+              </button>
+              <button
+                onClick={() => handleRoleChange("mentor")}
+                className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
+                  role === "mentor"
+                    ? "bg-amber-500 text-white shadow-md"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                <MentorIcon />
+                <span className="text-sm">Mentor</span>
+              </button>
+            </div>
+
+            {/* Auth Form - Email & Password Login */}
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6"
+              noValidate
+            >
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Official Email
+                </label>
+                <div className="mt-1 relative">
+                  <UserInputIcon />
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="block w-full pl-10 pr-4 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    placeholder="you@rajalakshmi.edu.in"
+                    autoComplete="email"
                   />
-
-                  <button
-                    type="button"
-                    onClick={() => handleRoleChange("student")}
-                    className={`relative z-10 flex-1 flex items-center justify-center space-x-2 py-1.5 text-xs font-bold tracking-wider transition-colors duration-300 ${
-                      !isMentor ? "text-white" : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    <StudentIcon />
-                    <span>STUDENT</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleRoleChange("mentor")}
-                    className={`relative z-10 flex-1 flex items-center justify-center space-x-2 py-1.5 text-xs font-bold tracking-wider transition-colors duration-300 ${
-                      isMentor ? "text-white" : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    <MentorIcon />
-                    <span>MENTOR</span>
-                  </button>
                 </div>
               </div>
 
-              {/* Title Section */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-serif text-slate-800 font-normal">
-                  Sign in
-                </h2>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                  {isMentor
-                    ? "Review submissions, publish feedback and manage your cohorts."
-                    : "Track your learning progress and connect with mentors."}
-                </p>
-              </div>
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
+              <div>
+                <div className="flex justify-between items-center">
                   <label
-                    htmlFor="email"
-                    className="mb-1.5 block text-[11px] font-bold text-slate-500 uppercase tracking-wider"
+                    htmlFor="password"
+                    className="block text-sm font-medium text-slate-700"
                   >
-                    Institutional Email ID
+                    Password
                   </label>
-                  <div className="relative flex items-center">
-                    <div className="absolute left-3.5 pointer-events-none">
-                      <UserInputIcon />
-                    </div>
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      autoComplete="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder={
-                        isMentor
-                          ? "Enter faculty email (e.g., name@rajalakshmi.edu.in)"
-                          : "Enter student email (e.g., name@rajalakshmi.edu.in)"
-                      }
-                      className="w-full rounded-lg border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(true)}
+                    className="text-sm font-medium text-amber-600 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
                 </div>
-
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <label
-                      htmlFor="password"
-                      className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider"
-                    >
-                      PASSWORD
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotModalOpen(true)}
-                      className="text-xs text-slate-500 hover:text-slate-800 transition"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <div className="relative flex items-center">
-                    <div className="absolute left-3.5 pointer-events-none">
-                      <LockIcon />
-                    </div>
-                    <input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Enter your confidential password"
-                      className="w-full rounded-lg border border-slate-200 bg-white pl-10 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 flex items-center justify-center"
-                    >
-                      <EyeIcon show={showPassword} />
-                    </button>
-                  </div>
+                <div className="mt-1 relative">
+                  <LockIcon />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="block w-full pl-10 pr-4 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3"
+                  >
+                    <EyeIcon show={showPassword} />
+                  </button>
                 </div>
+              </div>
 
-                {/* Action Button */}
+              <div className="flex items-center justify-between">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 rounded-lg py-3 text-xs font-semibold text-white transition-all duration-200 bg-[#18263E] hover:bg-[#121C2E] flex items-center justify-center space-x-2 disabled:cursor-not-allowed disabled:opacity-50 shadow-md"
+                  className={`w-full px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
+                    isLoading
+                      ? "bg-amber-600/70 text-white cursor-not-allowed"
+                      : "bg-amber-600 text-white hover:bg-amber-700"
+                  }`}
                 >
-                  <span>
-                    {isLoading
-                      ? "Signing in..."
-                      : `Sign in as ${role}`}
-                  </span>
-                  {!isLoading && <span>&rarr;</span>}
+                  {isLoading && (
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      />
+                    </svg>
+                  )}
+                  <span className="text-sm">Sign in</span>
                 </button>
-              </form>
+              </div>
+            </form>
+
+            {/* Footer Links - Privacy Policy & Terms of Service */}
+            <div className="mt-8 text-center text-sm text-slate-500">
+              <p>
+                &copy; {new Date().getFullYear()} Rajalakshmi Engineering College. All rights reserved.
+              </p>
+              <p className="mt-2">
+                <a
+                  href="#"
+                  className="text-amber-600 hover:underline"
+                >
+                  Privacy Policy
+                </a>{" "}
+                &bull;{" "}
+                <a
+                  href="#"
+                  className="text-amber-600 hover:underline"
+                >
+                  Terms of Service
+                </a>
+              </p>
             </div>
           </div>
         </div>
-
-        {/* EXTERNAL FOOTER LINKS */}
-        <div className="w-full mt-4 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 px-2">
-          <div className="flex items-center space-x-6">
-            <a href="#about" className="hover:text-slate-800 transition">
-              About
-            </a>
-            <a href="#help" className="hover:text-slate-800 transition">
-              Help center
-            </a>
-            <a href="#terms" className="hover:text-slate-800 transition">
-              Terms of use
-            </a>
-            <a href="#privacy" className="hover:text-slate-800 transition">
-              Privacy policy
-            </a>
-          </div>
-          <span className="mt-2 md:mt-0 text-slate-500">
-            © 2026 Scholar Hub, Inc.
-          </span>
-        </div>
       </div>
 
-      {/* Reset Password Modal */}
+      {/* FORGOT PASSWORD MODAL */}
       {isForgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h2 className="text-lg font-serif font-semibold text-slate-800">
-                  Reset Password
-                </h2>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Recover access to your account
-                </p>
-              </div>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-800">
+                Reset Password
+              </h3>
               <button
-                type="button"
                 onClick={closeModal}
-                className="text-xl leading-none text-slate-400 hover:text-slate-700 transition"
+                className="text-slate-400 hover:text-slate-600"
               >
                 &times;
               </button>
             </div>
 
-            {modalStatus.message && (
-              <div
-                className={`mt-4 rounded-lg border p-3 text-xs ${
-                  modalStatus.type === "success"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-red-200 bg-red-50 text-red-700"
-                }`}
-              >
-                {modalStatus.message}
+            {/* Modal Content */}
+            {forgotStep === 1 && (
+              <div>
+                <p className="text-sm text-slate-500 mb-4">
+                  Enter your official email to receive the password reset OTP.
+                </p>
+                <form
+                  onSubmit={handleSendOtp}
+                  className="space-y-4"
+                  noValidate
+                >
+                  <div>
+                    <label
+                      htmlFor="reset-email"
+                      className="block text-sm font-medium text-slate-700"
+                    >
+                      Official Email
+                    </label>
+                    <div className="mt-1 relative">
+                      <UserInputIcon />
+                      <input
+                        type="email"
+                        id="reset-email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        required
+                        className="block w-full pl-10 pr-4 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        placeholder="you@rajalakshmi.edu.in"
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="submit"
+                      disabled={isModalLoading}
+                      className={`w-full px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
+                        isModalLoading
+                          ? "bg-amber-600/70 text-white cursor-not-allowed"
+                          : "bg-amber-600 text-white hover:bg-amber-700"
+                      }`}
+                    >
+                      {isModalLoading && (
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          />
+                        </svg>
+                      )}
+                      <span className="text-sm">Send OTP</span>
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
 
-            {forgotStep === 1 && (
-              <form onSubmit={handleSendOtp} className="mt-4 space-y-4">
-                <p className="text-xs text-slate-600">
-                  Enter your registered institutional email address ending with @rajalakshmi.edu.in to receive an OTP code.
-                </p>
-
-                <div>
-                  <label
-                    htmlFor="resetEmail"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    Institutional Email Address
-                  </label>
-                  <input
-                    id="resetEmail"
-                    type="email"
-                    required
-                    value={resetEmail}
-                    onChange={(event) => setResetEmail(event.target.value)}
-                    placeholder="Enter official email (e.g., name@rajalakshmi.edu.in)"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isModalLoading}
-                  className="w-full rounded-md bg-[#18263E] hover:bg-[#121C2E] py-2 text-xs font-semibold text-white shadow disabled:opacity-50"
-                >
-                  {isModalLoading ? "Sending OTP..." : "Send OTP"}
-                </button>
-              </form>
-            )}
-
             {forgotStep === 2 && (
-              <form onSubmit={handleResetPassword} className="mt-4 space-y-3">
-                <div>
-                  <label
-                    htmlFor="otp"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    OTP Code
-                  </label>
-                  <input
-                    id="otp"
-                    type="text"
-                    required
-                    value={otp}
-                    onChange={(event) => setOtp(event.target.value)}
-                    placeholder="Enter 6-digit OTP code"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="newPassword"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    New Password
-                  </label>
-                  <input
-                    id="newPassword"
-                    type="password"
-                    required
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    placeholder="Enter new strong password"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="mb-1 block text-xs font-medium text-slate-700"
-                  >
-                    Confirm Password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    placeholder="Re-enter new password to confirm"
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isModalLoading}
-                  className="w-full rounded-md bg-[#18263E] hover:bg-[#121C2E] py-2 text-xs font-semibold text-white shadow disabled:opacity-50"
+              <div>
+                <p className="text-sm text-slate-500 mb-4">
+                  Enter the OTP sent to {resetEmail} to verify your email.
+                </p>
+                <form
+                  onSubmit={handleResetPassword}
+                  className="space-y-4"
+                  noValidate
                 >
-                  {isModalLoading ? "Updating..." : "Update Password"}
-                </button>
-              </form>
+                  <div>
+                    <label
+                      htmlFor="otp"
+                      className="block text-sm font-medium text-slate-700"
+                    >
+                      OTP
+                    </label>
+                    <div className="mt-1 relative">
+                      <input
+                        type="text"
+                        id="otp"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        required
+                        className="block w-full pl-4 pr-4 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        placeholder="Enter OTP"
+                        autoComplete="one-time-code"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="new-password"
+                      className="block text-sm font-medium text-slate-700"
+                    >
+                      New Password
+                    </label>
+                    <div className="mt-1 relative">
+                      <LockIcon />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        id="new-password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        className="block w-full pl-10 pr-4 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        placeholder="Enter new password"
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      >
+                        <EyeIcon show={showPassword} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="confirm-password"
+                      className="block text-sm font-medium text-slate-700"
+                    >
+                      Confirm Password
+                    </label>
+                    <div className="mt-1 relative">
+                      <LockIcon />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        id="confirm-password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="block w-full pl-10 pr-4 py-2 text-sm rounded-lg border focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        placeholder="Confirm your password"
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      >
+                        <EyeIcon show={showPassword} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="submit"
+                      disabled={isModalLoading}
+                      className={`w-full px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2 ${
+                        isModalLoading
+                          ? "bg-amber-600/70 text-white cursor-not-allowed"
+                          : "bg-amber-600 text-white hover:bg-amber-700"
+                      }`}
+                    >
+                      {isModalLoading && (
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          />
+                        </svg>
+                      )}
+                      <span className="text-sm">Reset Password</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
+
+            {/* Modal Footer - Step Indicator */}
+            <div className="mt-6">
+              <div className="flex items-center justify-center space-x-2">
+                <div
+                  className={`w-full h-1 rounded-full transition-all duration-300 ${
+                    forgotStep === 1
+                      ? "bg-amber-600"
+                      : "bg-slate-200"
+                  }`}
+                />
+                <div
+                  className={`w-full h-1 rounded-full transition-all duration-300 ${
+                    forgotStep === 2
+                      ? "bg-amber-600"
+                      : "bg-slate-200"
+                  }`}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
