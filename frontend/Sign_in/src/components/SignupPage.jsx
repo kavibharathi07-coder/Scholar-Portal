@@ -608,7 +608,6 @@ export default function AuthPage() {
       const data = await verifyPasswordOtp(resetEmail, otp);
 
       if (data.success) {
-        setOtp("");
         setModalStatus({
           type: "success",
           message: "OTP verified successfully.",
@@ -708,7 +707,12 @@ export default function AuthPage() {
     setIsModalLoading(true);
 
     try {
-      const data = await resetPassword(newPassword, confirmPassword);
+      const data = await resetPassword(
+        resetEmail,
+        otp,
+        newPassword,
+        confirmPassword
+      );
 
       setModalStatus({
         type: "success",

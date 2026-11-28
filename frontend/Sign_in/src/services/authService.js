@@ -21,10 +21,12 @@ async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
+    const detail = Array.isArray(data?.detail)
+      ? data.detail[0]?.msg
+      : data?.detail;
     const message =
       data?.error ||
-      data?.detail ||
-      (Array.isArray(data?.detail) ? data.detail[0]?.msg : null) ||
+      detail ||
       `Request failed (${response.status}).`;
 
     throw new Error(message);
@@ -75,10 +77,12 @@ export const verifyPasswordOtp = (email, otp) =>
     }),
   });
 
-export const resetPassword = (newPassword, confirmPassword) =>
+export const resetPassword = (email, otp, newPassword, confirmPassword) =>
   apiRequest("/auth/forgot-password/reset-password", {
     method: "POST",
     body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      otp: String(otp).trim(),
       new_password: newPassword,
       confirm_password: confirmPassword,
     }),
