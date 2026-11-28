@@ -51,7 +51,7 @@ services:
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-kamlesh.a2007@gmail.com}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-kqlq uukn ppqg kbmo}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-sycv ornc togx xngq}
       SMTP_FROM: ${SMTP_FROM:-kamlesh.a2007@gmail.com}
     depends_on:
       postgres:

@@ -9,10 +9,14 @@ from app.db.session import get_db
 from app.models.User import User
 from app.dependancies.auth import get_current_user
 from app.schemas.login import LoginRequest
-from app.schemas.auth import ForgotPasswordRequestOtpRequest, ForgotPasswordVerifyOtpRequest, ForgotPasswordResetRequest
+from app.schemas.auth import (
+    ForgotPasswordRequestOtpRequest,
+    ForgotPasswordResetRequest,
+    ForgotPasswordVerifyOtpRequest,
+)
 from app.services.auth import create_access_token
-from app.services.send_email import send_otp_email,verify_otp
-from app.services.reset_password import reset_password_with_verified_otp
+from app.services.reset_password import reset_password
+from app.services.send_email import clear_otp, send_otp_email, verify_otp
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -76,7 +80,7 @@ def login(
             "id": user.id,
             "name": user.name,
             "email": user.email,
-            "role": user.role,
+            "role": user.role.lower(),
         },
     }
 
@@ -102,9 +106,34 @@ def reset_forgot_password(
             content={"success": False, "error": "Passwords do not match."},
         )
 
-    # Core logic placeholder: verify verified-OTP session/token/email, hash & update password, invalidate OTP
-    updated = reset_password_with_verified_otp(
+    email = payload.email.strip().lower()
+    otp = payload.otp.strip()
+
+    if not email.endswith("@rajalakshmi.edu.in"):
+        return JSONResponse(
+            status_code=403,
+            content={
+                "success": False,
+                "error": "Please use your official @rajalakshmi.edu.in email.",
+            },
+        )
+
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": "Account not found."},
+        )
+
+    if not verify_otp(email=email, entered_otp=otp):
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "error": "Invalid or expired OTP."},
+        )
+
+    updated = reset_password(
         db=db,
+        email=email,
         new_password=payload.new_password,
     )
     if not updated:
@@ -115,6 +144,8 @@ def reset_forgot_password(
                 "error": "Unable to reset password. Please verify your OTP again.",
             },
         )
+
+    clear_otp(email)
 
     return {
         "success": True,
@@ -127,7 +158,7 @@ def me(user: User = Depends(get_current_user)):
         "id": user.id,
         "name": user.name,
         "email": user.email,
-        "role": user.role,
+        "role": user.role.lower(),
     }
 
 @router.post("/forgot-password/request-otp")
@@ -152,6 +183,13 @@ async def request_forgot_password_otp(
                 "success": False,
                 "error": "Please use your official @rajalakshmi.edu.in email.",
             },
+        )
+
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": "Account not found."},
         )
 
     sent = await send_otp_email(email=email)
@@ -191,7 +229,13 @@ def verify_forgot_password_otp(
             },
         )
 
-    # Core logic placeholder: validate stored OTP, expiry, and attempt limits
+    user = db.scalar(select(User).where(User.email == email))
+    if user is None:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": "Account not found."},
+        )
+
     is_valid = verify_otp(email=email, entered_otp=otp)
     if not is_valid:
         return JSONResponse(

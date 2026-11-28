@@ -95,8 +95,10 @@ def verify_otp(email: str, entered_otp: str) -> bool:
         stored_data["otp"],
         entered_otp
     ):
-        # OTP verified successfully
-        otp_storage.pop(email, None)
         return True
 
     return False
+
+
+def clear_otp(email: str) -> None:
+    otp_storage.pop(email, None)

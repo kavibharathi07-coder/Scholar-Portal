@@ -1,7 +1,8 @@
 # services/reset_password.py
 
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.models.User import User
 
@@ -11,33 +12,16 @@ pwd_context = CryptContext(
 )
 
 
-def reset_password_with_verified_otp(
+def reset_password(
     db: Session,
     email: str,
     new_password: str,
 ) -> bool:
-
-    # Find user by email
-    user = db.query(User).filter(
-        User.email == email
-    ).first()
-
+    user = db.scalar(select(User).where(User.email == email))
     if not user:
         return False
 
-    # Ensure OTP verification was completed
-    if not user.reset_otp_verified:
-        return False
-
-    # Hash the new password
-    hashed_password = pwd_context.hash(new_password)
-
-    # Update password in database
-    user.password = hashed_password
-
-    # Prevent reuse of the same OTP verification
-    user.reset_otp_verified = False
-
+    user.password_hash = pwd_context.hash(new_password)
     db.commit()
     db.refresh(user)
 

@@ -290,7 +290,12 @@ export default function AuthPage() {
 
       await verifyPasswordOtp(resetEmail, otp);
 
-      const data = await resetPassword(newPassword, confirmPassword);
+      const data = await resetPassword(
+        resetEmail,
+        otp,
+        newPassword,
+        confirmPassword
+      );
       setModalStatus({
         type: "success",
         message: data.message || "Password updated successfully!",

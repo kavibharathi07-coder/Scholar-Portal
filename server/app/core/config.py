@@ -68,9 +68,9 @@ class Settings(BaseSettings):
     # Email Configuration (Optional)
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
-    SMTP_USER: str = "kamlesh.a2007@gmail.com"
-    SMTP_PASSWORD: str = "kqlq uukn ppqg kbmo"
-    SMTP_FROM: str = "kamlesh.a2007@gmail.com"
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
 
     # AWS S3 Configuration (Optional)
     AWS_ACCESS_KEY_ID: str = ""
